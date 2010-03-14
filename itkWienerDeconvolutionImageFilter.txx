@@ -28,6 +28,7 @@
 #include "itkBinaryFunctorImageFilter.h"
 #include "itkFFTComplexConjugateToRealImageFilter.h"
 #include "itkRegionFromReferenceImageFilter.h"
+#include "itkIntensityWindowingImageFilter.h"
 #include "itkMath.h"
 
 namespace itk {
@@ -175,12 +176,22 @@ WienerDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, 
   ifft->SetReleaseDataFlag( true );
   progress->RegisterInternalFilter( ifft, 0.25f );
   
-  typedef itk::RegionFromReferenceImageFilter< InternalImageType, OutputImageType > CropType;
+  typedef itk::IntensityWindowingImageFilter< InternalImageType, OutputImageType > WindowType;
+  typename WindowType::Pointer window = WindowType::New();
+  window->SetInput( ifft->GetOutput() );
+  window->SetWindowMinimum( NumericTraits< OutputImagePixelType >::Zero );
+  window->SetWindowMaximum( NumericTraits< OutputImagePixelType >::max() );
+  window->SetNumberOfThreads( this->GetNumberOfThreads() );
+  window->SetReleaseDataFlag( true );
+  window->SetInPlace( true );
+  progress->RegisterInternalFilter( window, 0.025f );
+  
+  typedef itk::RegionFromReferenceImageFilter< OutputImageType, OutputImageType > CropType;
   typename CropType::Pointer crop = CropType::New();
-  crop->SetInput( ifft->GetOutput() );
+  crop->SetInput( window->GetOutput() );
   crop->SetReferenceImage( input );
   crop->SetNumberOfThreads( this->GetNumberOfThreads() );
-  progress->RegisterInternalFilter( crop, 0.05f );
+  progress->RegisterInternalFilter( crop, 0.025f );
   
   crop->GraftOutput( output );
   crop->Update();
