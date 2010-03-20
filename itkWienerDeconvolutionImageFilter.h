@@ -29,7 +29,10 @@ class WienerDeconvolution
 {
 public:
   typedef typename TComplex::value_type RealType;
-  WienerDeconvolution() {};
+  WienerDeconvolution()
+   {
+   m_Gamma = NumericTraits< RealType >::min();
+   };
   ~WienerDeconvolution() {};
   bool operator!=( const WienerDeconvolution & other ) const
     {
@@ -41,8 +44,9 @@ public:
     }
   inline TComplex operator()( const TComplex & input, const TComplex & psf )
     {
-    return input * std::conj(psf) / ( std::norm(psf) + NumericTraits< RealType >::min() );
+    return input * std::conj(psf) / ( std::norm(psf) + m_Gamma );
     }
+  RealType m_Gamma;
 };
 }
 
@@ -69,7 +73,7 @@ public:
 
   /** Some convenient typedefs. */
   typedef TInputImage                              InputImageType;
-  typedef TPointSpreadFunction                             PointSpreadFunctionType;
+  typedef TPointSpreadFunction                     PointSpreadFunctionType;
   typedef TOutputImage                             OutputImageType;
   typedef TFFTPrecision                            FFTPrecisionType;
   typedef typename InputImageType::Pointer         InputImagePointer;
@@ -156,6 +160,9 @@ public:
   itkSetMacro(Normalize, bool);
   itkBooleanMacro(Normalize);
   
+  itkGetConstMacro(Gamma, FFTPrecisionType);
+  itkSetMacro(Gamma, FFTPrecisionType);
+
 #ifdef ITK_USE_CONCEPT_CHECKING
   /** Begin concept checking */
   itkConceptMacro(InputHasPixelTraitsCheck,
@@ -182,9 +189,10 @@ private:
   WienerDeconvolutionImageFilter(const Self&); //purposely not implemented
   void operator=(const Self&); //purposely not implemented
 
-  int  m_GreatestPrimeFactor;
-  int  m_PadMethod;
-  bool m_Normalize;
+  int              m_GreatestPrimeFactor;
+  int              m_PadMethod;
+  bool             m_Normalize;
+  FFTPrecisionType m_Gamma;
 
 }; // end of class
 

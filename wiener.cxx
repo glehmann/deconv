@@ -11,9 +11,9 @@
 int main(int argc, char * argv[])
 {
 
-  if( argc < 4 )
+  if( argc < 5 )
     {
-    std::cerr << "usage: " << argv[0] << " intput kernel output [method [gpf]]" << std::endl;
+    std::cerr << "usage: " << argv[0] << " intput kernel output gamma [method [gpf]]" << std::endl;
     std::cerr << " input: the input image" << std::endl;
     std::cerr << " output: the output image" << std::endl;
     std::cerr << " method: padding method - 1: zero flux, 2: zero, 3: mirror, 4: wrap" << std::endl;
@@ -40,18 +40,19 @@ int main(int argc, char * argv[])
   FFTConvolutionType::Pointer conv = FFTConvolutionType::New();
   conv->SetInput( reader->GetOutput() );
   conv->SetPointSpreadFunction( reader2->GetOutput() );
+  conv->SetGamma( atof(argv[4]) );
   // test default value
   TEST_SET_GET_VALUE( 13, conv->GetGreatestPrimeFactor() );
   TEST_SET_GET_VALUE( FFTConvolutionType::ZERO_FLUX_NEUMANN, conv->GetPadMethod() );
-  if( argc >= 5 )
-    {
-    conv->SetPadMethod( atoi(argv[4]) );
-    TEST_SET_GET_VALUE( atoi(argv[4]), conv->GetPadMethod() );
-    }
   if( argc >= 6 )
     {
-    conv->SetGreatestPrimeFactor( atoi(argv[5]) );
-    TEST_SET_GET_VALUE( atoi(argv[5]), conv->GetGreatestPrimeFactor() );
+    conv->SetPadMethod( atoi(argv[5]) );
+    TEST_SET_GET_VALUE( atoi(argv[5]), conv->GetPadMethod() );
+    }
+  if( argc >= 7 )
+    {
+    conv->SetGreatestPrimeFactor( atoi(argv[6]) );
+    TEST_SET_GET_VALUE( atoi(argv[6]), conv->GetGreatestPrimeFactor() );
     }
   itk::SimpleFilterWatcher watcher_norm(conv, "conv");
 
