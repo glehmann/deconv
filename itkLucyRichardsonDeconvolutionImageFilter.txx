@@ -30,8 +30,7 @@
 #include "itkFFTComplexConjugateToRealImageFilter.h"
 #include "itkRegionFromReferenceImageFilter.h"
 #include "itkIntensityWindowingImageFilter.h"
-#include "itkMath.h"
-#include "itkImageFileWriter.h"
+#include "itkRelativeChangeCalculator.h"
 
 namespace itk {
 
@@ -43,6 +42,7 @@ LucyRichardsonDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutpu
   m_GreatestPrimeFactor = 13;
   m_PadMethod = ZERO_FLUX_NEUMANN;
   m_NumberOfIterations = 10;
+  m_RelativeChangeThreshold = 0;
   this->SetNumberOfRequiredInputs(2);
 }
 
@@ -253,6 +253,21 @@ LucyRichardsonDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutpu
   for( int it=0; it<m_NumberOfIterations; it++ )
     {
     rmult->Update();
+    // do we have to stop the iterations based on the relative change?
+    if( m_RelativeChangeThreshold > 0 )
+      {
+      typedef typename itk::RelativeChangeCalculator< InternalImageType > ChangeType;
+      typename ChangeType::Pointer change = ChangeType::New();
+      change->SetImage( img );
+      change->SetNewImage( rmult->GetOutput() );
+      change->Compute();
+      std::cout << change->GetOutput() << std::endl;
+      if( change->GetOutput() < m_RelativeChangeThreshold )
+        {
+        break;
+        }
+      }
+    // ok, lets go for another round
     img = rmult->GetOutput();
     img->DisconnectPipeline();
     fft->SetInput( img );
@@ -291,6 +306,8 @@ LucyRichardsonDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutpu
 {
   Superclass::PrintSelf(os, indent);
 
+  os << indent << "NumberOfIterations: "  << m_NumberOfIterations << std::endl;
+  os << indent << "RelativeChangeThreshold: "  << m_RelativeChangeThreshold << std::endl;
   os << indent << "Normalize: "  << m_Normalize << std::endl;
   os << indent << "GreatestPrimeFactor: "  << m_GreatestPrimeFactor << std::endl;
   os << indent << "PadMethod: "  << m_PadMethod << std::endl;

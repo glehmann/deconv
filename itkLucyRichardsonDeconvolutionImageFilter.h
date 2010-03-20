@@ -178,8 +178,23 @@ public:
   itkSetMacro(Normalize, bool);
   itkBooleanMacro(Normalize);
   
+  /**
+   * Set/Get the number of iterations to run. If RelativeChangeThreshold is set to a value
+   * greater than zero, then this parameter is the maximum number of iterations which can
+   * be exceeded even if the RelativeChangeThreshold has not been reached.
+   * Defaults to 10.
+   */
   itkGetConstMacro(NumberOfIterations, int);
   itkSetMacro(NumberOfIterations, int);
+  
+  /**
+   * Set/Get the relative change threshold between two iterations to stop the iteration.
+   * A value lower or equal to 0 mean that this feature is not used. A usual value is 
+   * between 10^-3 and 10^-5.
+   * Defaults to 0 (not used).
+   */
+  itkGetConstMacro(RelativeChangeThreshold, double);
+  itkSetMacro(RelativeChangeThreshold, double);
 
 #ifdef ITK_USE_CONCEPT_CHECKING
   /** Begin concept checking */
@@ -207,10 +222,11 @@ private:
   LucyRichardsonDeconvolutionImageFilter(const Self&); //purposely not implemented
   void operator=(const Self&); //purposely not implemented
 
-  int  m_GreatestPrimeFactor;
-  int  m_PadMethod;
-  bool m_Normalize;
-  int  m_NumberOfIterations;
+  int    m_GreatestPrimeFactor;
+  int    m_PadMethod;
+  bool   m_Normalize;
+  int    m_NumberOfIterations;
+  double m_RelativeChangeThreshold;
 
 }; // end of class
 
