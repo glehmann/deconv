@@ -43,6 +43,9 @@ LucyRichardsonDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutpu
   m_PadMethod = ZERO_FLUX_NEUMANN;
   m_NumberOfIterations = 10;
   m_RelativeChangeThreshold = 0;
+  m_RegularizationFilter = NULL;
+  m_Iteration = 0;
+  m_RelativeChange = 0;
   this->SetNumberOfRequiredInputs(2);
 }
 
@@ -70,13 +73,15 @@ void
 LucyRichardsonDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TFFTPrecision>
 ::GenerateData()
 {
+  // members used to monitor the iterations
+  m_Iteration = 0;
+  m_RelativeChange = 0;
+  
   this->AllocateOutputs();
   const InputImageType * input = this->GetInput();
   const PointSpreadFunctionType * kernel = this->GetPointSpreadFunction();
   OutputImageType * output = this->GetOutput();
 
-  typedef typename itk::Image< FFTPrecisionType, ImageDimension > InternalImageType;
-  
   // Create a process accumulator for tracking the progress of this minipipeline
   // ProgressAccumulator::Pointer progress = ProgressAccumulator::New();
   // progress->SetMiniPipelineFilter(this);
@@ -249,34 +254,46 @@ LucyRichardsonDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutpu
   // progress->RegisterInternalFilter( rmult, 0.1f );
   
   // begin the iterations
+  typedef typename itk::RelativeChangeCalculator< InternalImageType > ChangeType;
+  typename ChangeType::Pointer change = ChangeType::New();
   typename InternalImageType::Pointer img = pad->GetOutput();
-  for( int it=0; it<m_NumberOfIterations; it++ )
+  for( m_Iteration=1; m_Iteration<=m_NumberOfIterations; m_Iteration++ )
     {
-    rmult->Update();
-    // do we have to stop the iterations based on the relative change?
-    if( m_RelativeChangeThreshold > 0 )
+    // should we use regularisation filter? -- tested in the iteration on purpose, to be able to
+    // change the filter by looking at the iteration event
+    typename RegularizationFilterType::Pointer last = rmult.GetPointer();
+    if( m_RegularizationFilter.IsNotNull() )
       {
-      typedef typename itk::RelativeChangeCalculator< InternalImageType > ChangeType;
-      typename ChangeType::Pointer change = ChangeType::New();
-      change->SetImage( img );
-      change->SetNewImage( rmult->GetOutput() );
-      change->Compute();
-      std::cout << change->GetOutput() << std::endl;
-      if( change->GetOutput() < m_RelativeChangeThreshold )
-        {
-        break;
-        }
+      m_RegularizationFilter->SetInput( rmult->GetOutput() );
+      last = m_RegularizationFilter;
       }
-    // ok, lets go for another round
-    img = rmult->GetOutput();
-    img->DisconnectPipeline();
-    fft->SetInput( img );
-    rmult->SetInput( 1, img );
-    this->UpdateProgress( (it+1.0)/m_NumberOfIterations );
+    last->Update();
+    
+    // do we have to stop the iterations based on the relative change?
+    change->SetImage( img );
+    change->SetNewImage( last->GetOutput() );
+    change->Compute();
+    // std::cout << change->GetOutput() << std::endl;
+    m_RelativeChange = change->GetOutput();
+    if( m_RelativeChangeThreshold > 0 && m_RelativeChange < m_RelativeChangeThreshold )
+      {
+      break;
+      }
+    else
+      {
+      // ok, lets go for another round
+      img = last->GetOutput();
+      img->DisconnectPipeline();
+      fft->SetInput( img );
+      rmult->SetInput( 1, img );
+      this->UpdateProgress( m_Iteration/(float)m_NumberOfIterations );
+      this->InvokeEvent( IterationEvent() );
+      }
     }
   img->SetReleaseDataFlag( true );
   this->UpdateProgress( 1.0 );
-  
+  m_Iteration--; // to have the real number of iterations
+   
   typedef itk::IntensityWindowingImageFilter< InternalImageType, OutputImageType > WindowType;
   typename WindowType::Pointer window = WindowType::New();
   window->SetInput( img );
@@ -306,7 +323,9 @@ LucyRichardsonDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutpu
 {
   Superclass::PrintSelf(os, indent);
 
+  os << indent << "Iteration: "  << m_Iteration << std::endl;
   os << indent << "NumberOfIterations: "  << m_NumberOfIterations << std::endl;
+  os << indent << "RelativeChange: "  << m_RelativeChange << std::endl;
   os << indent << "RelativeChangeThreshold: "  << m_RelativeChangeThreshold << std::endl;
   os << indent << "Normalize: "  << m_Normalize << std::endl;
   os << indent << "GreatestPrimeFactor: "  << m_GreatestPrimeFactor << std::endl;

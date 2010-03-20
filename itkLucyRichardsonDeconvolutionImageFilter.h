@@ -115,6 +115,9 @@ public:
   itkStaticConstMacro(ImageDimension, unsigned int,
                       TOutputImage::ImageDimension);
 
+  typedef typename itk::Image< FFTPrecisionType, ImageDimension > InternalImageType;
+  typedef typename itk::ImageToImageFilter< InternalImageType, InternalImageType > RegularizationFilterType;
+  
   /** Standard New method. */
   itkNewMacro(Self);  
 
@@ -196,6 +199,13 @@ public:
   itkGetConstMacro(RelativeChangeThreshold, double);
   itkSetMacro(RelativeChangeThreshold, double);
 
+  itkGetConstObjectMacro(RegularizationFilter, RegularizationFilterType);
+  itkGetObjectMacro(RegularizationFilter, RegularizationFilterType);
+  itkSetObjectMacro(RegularizationFilter, RegularizationFilterType);
+
+  itkGetConstMacro(Iteration, int);
+  itkGetConstMacro(RelativeChange, double);
+
 #ifdef ITK_USE_CONCEPT_CHECKING
   /** Begin concept checking */
   itkConceptMacro(InputHasPixelTraitsCheck,
@@ -222,11 +232,14 @@ private:
   LucyRichardsonDeconvolutionImageFilter(const Self&); //purposely not implemented
   void operator=(const Self&); //purposely not implemented
 
-  int    m_GreatestPrimeFactor;
-  int    m_PadMethod;
-  bool   m_Normalize;
-  int    m_NumberOfIterations;
-  double m_RelativeChangeThreshold;
+  int                                        m_GreatestPrimeFactor;
+  int                                        m_PadMethod;
+  bool                                       m_Normalize;
+  int                                        m_NumberOfIterations;
+  double                                     m_RelativeChangeThreshold;
+  typename RegularizationFilterType::Pointer m_RegularizationFilter;
+  int                                        m_Iteration;
+  double                                     m_RelativeChange;
 
 }; // end of class
 

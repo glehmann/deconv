@@ -5,8 +5,38 @@
 // #include "itkFFTWRealToComplexConjugateImageFilter.h"
 // #include "itkFFTWComplexConjugateToRealImageFilter.h"
 #include "itkLucyRichardsonDeconvolutionImageFilter.h"
+#include "itkMedianImageFilter.h"
 #include "itkTestingMacros.h"
+#include "itkCommand.h"
 
+void disableReg(itk::Object* object, const itk::EventObject &, void*)
+{
+  // the same typedefs than in the main function - should be done in a nicer way
+  const int                 Dimension = 2;
+  typedef unsigned char     PixelType;
+
+  typedef itk::Image< PixelType, Dimension >                   ImageType;
+  typedef itk::LucyRichardsonDeconvolutionImageFilter< ImageType, ImageType > FilterType;
+  typedef itk::MedianImageFilter< FilterType::InternalImageType,
+    FilterType::InternalImageType >                      MedianType;
+  
+  // real stuff begins here
+  // get the LR filter and the median filter
+  FilterType * filter = dynamic_cast< FilterType * >( object );
+  MedianType * median = dynamic_cast< MedianType * >( filter->GetRegularizationFilter() );
+
+  // set half of the slice number as radius
+  MedianType::InputSizeType radius;
+  if( filter->GetIteration() % 10 == 0 )
+    {
+    radius.Fill( 1 );
+    }
+  else
+    {
+    radius.Fill( 0 );
+    }  
+  median->SetRadius( radius );
+}
 
 int main(int argc, char * argv[])
 {
@@ -36,15 +66,29 @@ int main(int argc, char * argv[])
   reader2->SetFileName( argv[2] );
   // itk::SimpleFilterWatcher watcher_reader2(reader2, "reader2");
 
+  typedef itk::MedianImageFilter< IType, IType > MedianType;
+  MedianType::Pointer median = MedianType::New();
+  median->SetInput( reader->GetOutput() );
+
   typedef itk::LucyRichardsonDeconvolutionImageFilter< IType > FFTConvolutionType;
   FFTConvolutionType::Pointer conv = FFTConvolutionType::New();
-  conv->SetInput( reader->GetOutput() );
+  conv->SetInput( median->GetOutput() );
+//  conv->SetInput( reader->GetOutput() );
   conv->SetPointSpreadFunction( reader2->GetOutput() );
   // test default value
   TEST_SET_GET_VALUE( 13, conv->GetGreatestPrimeFactor() );
   TEST_SET_GET_VALUE( FFTConvolutionType::ZERO_FLUX_NEUMANN, conv->GetPadMethod() );
   TEST_SET_GET_VALUE( 10, conv->GetNumberOfIterations() );
   TEST_SET_GET_VALUE( 0.0, conv->GetRelativeChangeThreshold() );
+  TEST_SET_GET_VALUE( NULL, conv->GetRegularizationFilter() );
+  
+  typedef itk::MedianImageFilter< FFTConvolutionType::InternalImageType, FFTConvolutionType::InternalImageType > InternalMedianType;
+  InternalMedianType::Pointer imedian = InternalMedianType::New();
+  conv->SetRegularizationFilter( imedian );
+
+  itk::CStyleCommand::Pointer command = itk::CStyleCommand::New();
+  command->SetCallback( *disableReg );
+  conv->AddObserver( itk::IterationEvent(), command );
 
   if( argc >= 5 )
     {
