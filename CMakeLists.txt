@@ -1,6 +1,6 @@
 #Change PROJECT_NAME to the name of your project
 PROJECT(deconv)
-INCLUDE_DIRECTORIES("../fftconv")
+INCLUDE_DIRECTORIES("${CMAKE_CURRENT_SOURCE_DIR}/../fftconv")
 
 # required to avoid warnings while running cmake
 CMAKE_MINIMUM_REQUIRED(VERSION 2.4.2)
@@ -75,6 +75,10 @@ ADD_EXECUTABLE(${CurrentExe} ${CurrentExe}.cxx)
 TARGET_LINK_LIBRARIES(${CurrentExe} ${Libraries})
 
 SET(CurrentExe "conj")
+ADD_EXECUTABLE(${CurrentExe} ${CurrentExe}.cxx)
+TARGET_LINK_LIBRARIES(${CurrentExe} ${Libraries})
+
+SET(CurrentExe "lr")
 ADD_EXECUTABLE(${CurrentExe} ${CurrentExe}.cxx)
 TARGET_LINK_LIBRARIES(${CurrentExe} ${Libraries})
 
