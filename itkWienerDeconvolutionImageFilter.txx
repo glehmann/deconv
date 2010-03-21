@@ -37,7 +37,7 @@ template <class TInputImage, class TPointSpreadFunction, class TOutputImage, cla
 WienerDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TFFTPrecision>
 ::WienerDeconvolutionImageFilter()
 {
-  m_Gamma = NumericTraits< FFTPrecisionType >::min();
+  m_Gamma = 0.001;
   m_Normalize = true;
   m_GreatestPrimeFactor = 13;
   m_PadMethod = ZERO_FLUX_NEUMANN;

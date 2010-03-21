@@ -159,7 +159,12 @@ public:
   itkGetConstMacro(Normalize, bool);
   itkSetMacro(Normalize, bool);
   itkBooleanMacro(Normalize);
-  
+
+  /**
+   * Set/Get the smoothing parameter. Usual values are in the range 0.001-0.1.
+   * Higher value produce smoother results.
+   * Defaults to 0.001.
+   */
   itkGetConstMacro(Gamma, FFTPrecisionType);
   itkSetMacro(Gamma, FFTPrecisionType);
 
