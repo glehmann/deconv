@@ -203,6 +203,13 @@ public:
   itkGetObjectMacro(SmoothingFilter, SmoothingFilterType);
   itkSetObjectMacro(SmoothingFilter, SmoothingFilterType);
 
+  /**
+   * Set/Get how often a smoothing is applied with the SmoothingFilter.
+   * By default, the smoothing is applied every iterations.
+   */
+  itkGetConstMacro(SmoothingPeriod, int);
+  itkSetMacro(SmoothingPeriod, int);
+
   itkGetConstMacro(Iteration, int);
   itkGetConstMacro(RelativeChange, double);
 
@@ -240,6 +247,7 @@ private:
   typename SmoothingFilterType::Pointer      m_SmoothingFilter;
   int                                        m_Iteration;
   double                                     m_RelativeChange;
+  int                                        m_SmoothingPeriod;
 
 }; // end of class
 

@@ -46,6 +46,7 @@ RichardsonLucyDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutpu
   m_SmoothingFilter = NULL;
   m_Iteration = 0;
   m_RelativeChange = 0;
+  m_SmoothingPeriod = 1;
   this->SetNumberOfRequiredInputs(2);
 }
 
@@ -262,7 +263,7 @@ RichardsonLucyDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutpu
     // should we use regularisation filter? -- tested in the iteration on purpose, to be able to
     // change the filter by looking at the iteration event
     typename SmoothingFilterType::Pointer last = rmult.GetPointer();
-    if( m_SmoothingFilter.IsNotNull() )
+    if( m_SmoothingFilter.IsNotNull() && m_Iteration % m_SmoothingPeriod == 0 )
       {
       m_SmoothingFilter->SetInput( rmult->GetOutput() );
       last = m_SmoothingFilter;
