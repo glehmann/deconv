@@ -1,7 +1,7 @@
 /*=========================================================================
 
   Program:   Insight Segmentation & Registration Toolkit
-  Module:    $RCSfile: itkLucyRichardsonDeconvolutionImageFilter.txx,v $
+  Module:    $RCSfile: itkRichardsonLucyDeconvolutionImageFilter.txx,v $
   Language:  C++
   Date:      $Date: 2007-01-20 20:05:58 $
   Version:   $Revision: 1.3 $
@@ -14,10 +14,10 @@
      PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
-#ifndef __itkLucyRichardsonDeconvolutionImageFilter_txx
-#define __itkLucyRichardsonDeconvolutionImageFilter_txx
+#ifndef __itkRichardsonLucyDeconvolutionImageFilter_txx
+#define __itkRichardsonLucyDeconvolutionImageFilter_txx
 
-#include "itkLucyRichardsonDeconvolutionImageFilter.h"
+#include "itkRichardsonLucyDeconvolutionImageFilter.h"
 #include "itkProgressAccumulator.h"
 #include "itkFlipImageFilter.h"
 #include "itkFFTPadImageFilter.h"
@@ -35,8 +35,8 @@
 namespace itk {
 
 template <class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>
-LucyRichardsonDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>
-::LucyRichardsonDeconvolutionImageFilter()
+RichardsonLucyDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>
+::RichardsonLucyDeconvolutionImageFilter()
 {
   m_Normalize = true;
   m_GreatestPrimeFactor = 13;
@@ -51,7 +51,7 @@ LucyRichardsonDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutpu
 
 template <class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>
 void 
-LucyRichardsonDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>
+RichardsonLucyDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>
 ::GenerateInputRequestedRegion()
 {
   // call the superclass' implementation of this method
@@ -70,7 +70,7 @@ LucyRichardsonDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutpu
 
 template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>
 void
-LucyRichardsonDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>
+RichardsonLucyDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>
 ::GenerateData()
 {
   // members used to monitor the iterations
@@ -318,7 +318,7 @@ LucyRichardsonDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutpu
 
 template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>
 void
-LucyRichardsonDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>
+RichardsonLucyDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>
 ::PrintSelf(std::ostream &os, Indent indent) const
 {
   Superclass::PrintSelf(os, indent);

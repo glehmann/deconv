@@ -1,7 +1,7 @@
 /*=========================================================================
 
   Program:   Insight Segmentation & Registration Toolkit
-  Module:    $RCSfile: itkLucyRichardsonDeconvolutionImageFilter.h,v $
+  Module:    $RCSfile: itkRichardsonLucyDeconvolutionImageFilter.h,v $
   Language:  C++
   Date:      $Date: 2009-01-28 18:14:36 $
   Version:   $Revision: 1.7 $
@@ -14,8 +14,8 @@
      PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
-#ifndef __itkLucyRichardsonDeconvolutionImageFilter_h
-#define __itkLucyRichardsonDeconvolutionImageFilter_h
+#ifndef __itkRichardsonLucyDeconvolutionImageFilter_h
+#define __itkRichardsonLucyDeconvolutionImageFilter_h
 
 #include "itkImageToImageFilter.h"
 #include "itkConceptChecking.h"
@@ -68,7 +68,7 @@ public:
 };
 }
 
-/** \class LucyRichardsonDeconvolutionImageFilter
+/** \class RichardsonLucyDeconvolutionImageFilter
  * \brief 
  *
  * 
@@ -77,12 +77,12 @@ public:
  * \sa FFTShiftImageFilter NormalizeToConstantImageFilter FFTRealToComplexConjugateImageFilter
  */
 template<class TInputImage, class TPointSpreadFunction=TInputImage, class TOutputImage=TInputImage, class TInternalPrecision=float>
-class ITK_EXPORT LucyRichardsonDeconvolutionImageFilter : 
+class ITK_EXPORT RichardsonLucyDeconvolutionImageFilter : 
     public ImageToImageFilter<TInputImage, TOutputImage>
 {
 public:
   /** Standard class typedefs. */
-  typedef LucyRichardsonDeconvolutionImageFilter Self;
+  typedef RichardsonLucyDeconvolutionImageFilter Self;
 
   typedef ImageToImageFilter<TInputImage, TOutputImage> Superclass;
 
@@ -122,7 +122,7 @@ public:
   itkNewMacro(Self);  
 
   /** Runtime information support. */
-  itkTypeMacro(LucyRichardsonDeconvolutionImageFilter, ImageToImageFilter);
+  itkTypeMacro(RichardsonLucyDeconvolutionImageFilter, ImageToImageFilter);
 
    /** Set the kernel image */
   void SetPointSpreadFunction(const TPointSpreadFunction *input)
@@ -217,8 +217,8 @@ public:
 
 
 protected:
-  LucyRichardsonDeconvolutionImageFilter();
-  ~LucyRichardsonDeconvolutionImageFilter() {};
+  RichardsonLucyDeconvolutionImageFilter();
+  ~RichardsonLucyDeconvolutionImageFilter() {};
 
   void GenerateInputRequestedRegion();
   
@@ -229,7 +229,7 @@ protected:
   void PrintSelf(std::ostream& os, Indent indent) const;
 
 private:
-  LucyRichardsonDeconvolutionImageFilter(const Self&); //purposely not implemented
+  RichardsonLucyDeconvolutionImageFilter(const Self&); //purposely not implemented
   void operator=(const Self&); //purposely not implemented
 
   int                                        m_GreatestPrimeFactor;
@@ -246,7 +246,7 @@ private:
 } // end namespace itk
   
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkLucyRichardsonDeconvolutionImageFilter.txx"
+#include "itkRichardsonLucyDeconvolutionImageFilter.txx"
 #endif
 
 #endif
