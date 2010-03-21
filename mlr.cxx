@@ -23,7 +23,7 @@ void disableReg(itk::Object* object, const itk::EventObject &, void*)
   // real stuff begins here
   // get the LR filter and the median filter
   FilterType * filter = dynamic_cast< FilterType * >( object );
-  MedianType * median = dynamic_cast< MedianType * >( filter->GetRegularizationFilter() );
+  MedianType * median = dynamic_cast< MedianType * >( filter->GetSmoothingFilter() );
 
   // set half of the slice number as radius
   MedianType::InputSizeType radius;
@@ -80,11 +80,11 @@ int main(int argc, char * argv[])
   TEST_SET_GET_VALUE( FFTConvolutionType::ZERO_FLUX_NEUMANN, conv->GetPadMethod() );
   TEST_SET_GET_VALUE( 10, conv->GetNumberOfIterations() );
   TEST_SET_GET_VALUE( 0.0, conv->GetRelativeChangeThreshold() );
-  TEST_SET_GET_VALUE( NULL, conv->GetRegularizationFilter() );
+  TEST_SET_GET_VALUE( NULL, conv->GetSmoothingFilter() );
   
   typedef itk::MedianImageFilter< FFTConvolutionType::InternalImageType, FFTConvolutionType::InternalImageType > InternalMedianType;
   InternalMedianType::Pointer imedian = InternalMedianType::New();
-  conv->SetRegularizationFilter( imedian );
+  conv->SetSmoothingFilter( imedian );
 
   itk::CStyleCommand::Pointer command = itk::CStyleCommand::New();
   command->SetCallback( *disableReg );

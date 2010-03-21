@@ -76,7 +76,7 @@ public:
  *
  * \sa FFTShiftImageFilter NormalizeToConstantImageFilter FFTRealToComplexConjugateImageFilter
  */
-template<class TInputImage, class TPointSpreadFunction=TInputImage, class TOutputImage=TInputImage, class TFFTPrecision=float>
+template<class TInputImage, class TPointSpreadFunction=TInputImage, class TOutputImage=TInputImage, class TInternalPrecision=float>
 class ITK_EXPORT LucyRichardsonDeconvolutionImageFilter : 
     public ImageToImageFilter<TInputImage, TOutputImage>
 {
@@ -93,7 +93,7 @@ public:
   typedef TInputImage                              InputImageType;
   typedef TPointSpreadFunction                             PointSpreadFunctionType;
   typedef TOutputImage                             OutputImageType;
-  typedef TFFTPrecision                            FFTPrecisionType;
+  typedef TInternalPrecision                            InternalPrecisionType;
   typedef typename InputImageType::Pointer         InputImagePointer;
   typedef typename InputImageType::ConstPointer    InputImageConstPointer;
   typedef typename InputImageType::PixelType       InputImagePixelType;
@@ -115,8 +115,8 @@ public:
   itkStaticConstMacro(ImageDimension, unsigned int,
                       TOutputImage::ImageDimension);
 
-  typedef typename itk::Image< FFTPrecisionType, ImageDimension > InternalImageType;
-  typedef typename itk::ImageToImageFilter< InternalImageType, InternalImageType > RegularizationFilterType;
+  typedef typename itk::Image< InternalPrecisionType, ImageDimension > InternalImageType;
+  typedef typename itk::ImageToImageFilter< InternalImageType, InternalImageType > SmoothingFilterType;
   
   /** Standard New method. */
   itkNewMacro(Self);  
@@ -199,9 +199,9 @@ public:
   itkGetConstMacro(RelativeChangeThreshold, double);
   itkSetMacro(RelativeChangeThreshold, double);
 
-  itkGetConstObjectMacro(RegularizationFilter, RegularizationFilterType);
-  itkGetObjectMacro(RegularizationFilter, RegularizationFilterType);
-  itkSetObjectMacro(RegularizationFilter, RegularizationFilterType);
+  itkGetConstObjectMacro(SmoothingFilter, SmoothingFilterType);
+  itkGetObjectMacro(SmoothingFilter, SmoothingFilterType);
+  itkSetObjectMacro(SmoothingFilter, SmoothingFilterType);
 
   itkGetConstMacro(Iteration, int);
   itkGetConstMacro(RelativeChange, double);
@@ -237,7 +237,7 @@ private:
   bool                                       m_Normalize;
   int                                        m_NumberOfIterations;
   double                                     m_RelativeChangeThreshold;
-  typename RegularizationFilterType::Pointer m_RegularizationFilter;
+  typename SmoothingFilterType::Pointer      m_SmoothingFilter;
   int                                        m_Iteration;
   double                                     m_RelativeChange;
 

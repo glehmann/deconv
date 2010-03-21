@@ -33,8 +33,8 @@
 
 namespace itk {
 
-template <class TInputImage, class TPointSpreadFunction, class TOutputImage, class TFFTPrecision>
-WienerDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TFFTPrecision>
+template <class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>
+WienerDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>
 ::WienerDeconvolutionImageFilter()
 {
   m_Gamma = 0.001;
@@ -44,9 +44,9 @@ WienerDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, 
   this->SetNumberOfRequiredInputs(2);
 }
 
-template <class TInputImage, class TPointSpreadFunction, class TOutputImage, class TFFTPrecision>
+template <class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>
 void 
-WienerDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TFFTPrecision>
+WienerDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>
 ::GenerateInputRequestedRegion()
 {
   // call the superclass' implementation of this method
@@ -63,9 +63,9 @@ WienerDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, 
 }
 
 
-template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TFFTPrecision>
+template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>
 void
-WienerDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TFFTPrecision>
+WienerDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>
 ::GenerateData()
 {
   this->AllocateOutputs();
@@ -73,7 +73,7 @@ WienerDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, 
   const PointSpreadFunctionType * kernel = this->GetPointSpreadFunction();
   OutputImageType * output = this->GetOutput();
 
-  typedef typename itk::Image< FFTPrecisionType, ImageDimension > InternalImageType;
+  typedef typename itk::Image< InternalPrecisionType, ImageDimension > InternalImageType;
   
   // Create a process accumulator for tracking the progress of this minipipeline
   ProgressAccumulator::Pointer progress = ProgressAccumulator::New();
@@ -115,7 +115,7 @@ WienerDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, 
   pad->SetPadMethod( m_PadMethod );
   progress->RegisterInternalFilter( pad, 0.05f );
 
-  typedef itk::FFTRealToComplexConjugateImageFilter< FFTPrecisionType, ImageDimension > FFTType;
+  typedef itk::FFTRealToComplexConjugateImageFilter< InternalPrecisionType, ImageDimension > FFTType;
   typename FFTType::Pointer fft = FFTType::New();
   fft->SetInput( pad->GetOutput() );
   fft->SetNumberOfThreads( this->GetNumberOfThreads() );
@@ -166,7 +166,7 @@ WienerDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, 
   mult->SetInPlace( true );
   progress->RegisterInternalFilter( mult, 0.1f );
   
-  typedef itk::FFTComplexConjugateToRealImageFilter< FFTPrecisionType, ImageDimension > IFFTType;
+  typedef itk::FFTComplexConjugateToRealImageFilter< InternalPrecisionType, ImageDimension > IFFTType;
   typename IFFTType::Pointer ifft = IFFTType::New();
   ifft->SetInput( mult->GetOutput() );
   // we can't run a single update here: we have to set the
@@ -200,9 +200,9 @@ WienerDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, 
   this->GraftOutput( crop->GetOutput() );
 }
 
-template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TFFTPrecision>
+template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>
 void
-WienerDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TFFTPrecision>
+WienerDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>
 ::PrintSelf(std::ostream &os, Indent indent) const
 {
   Superclass::PrintSelf(os, indent);

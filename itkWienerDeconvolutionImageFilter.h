@@ -58,7 +58,7 @@ public:
  *
  * \sa FFTShiftImageFilter NormalizeToConstantImageFilter FFTRealToComplexConjugateImageFilter
  */
-template<class TInputImage, class TPointSpreadFunction=TInputImage, class TOutputImage=TInputImage, class TFFTPrecision=float>
+template<class TInputImage, class TPointSpreadFunction=TInputImage, class TOutputImage=TInputImage, class TInternalPrecision=float>
 class ITK_EXPORT WienerDeconvolutionImageFilter : 
     public ImageToImageFilter<TInputImage, TOutputImage>
 {
@@ -75,7 +75,7 @@ public:
   typedef TInputImage                              InputImageType;
   typedef TPointSpreadFunction                     PointSpreadFunctionType;
   typedef TOutputImage                             OutputImageType;
-  typedef TFFTPrecision                            FFTPrecisionType;
+  typedef TInternalPrecision                            InternalPrecisionType;
   typedef typename InputImageType::Pointer         InputImagePointer;
   typedef typename InputImageType::ConstPointer    InputImageConstPointer;
   typedef typename InputImageType::PixelType       InputImagePixelType;
@@ -165,8 +165,8 @@ public:
    * Higher value produce smoother results.
    * Defaults to 0.001.
    */
-  itkGetConstMacro(Gamma, FFTPrecisionType);
-  itkSetMacro(Gamma, FFTPrecisionType);
+  itkGetConstMacro(Gamma, InternalPrecisionType);
+  itkSetMacro(Gamma, InternalPrecisionType);
 
 #ifdef ITK_USE_CONCEPT_CHECKING
   /** Begin concept checking */
@@ -197,7 +197,7 @@ private:
   int              m_GreatestPrimeFactor;
   int              m_PadMethod;
   bool             m_Normalize;
-  FFTPrecisionType m_Gamma;
+  InternalPrecisionType m_Gamma;
 
 }; // end of class
 

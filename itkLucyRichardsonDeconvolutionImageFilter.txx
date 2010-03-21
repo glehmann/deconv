@@ -34,8 +34,8 @@
 
 namespace itk {
 
-template <class TInputImage, class TPointSpreadFunction, class TOutputImage, class TFFTPrecision>
-LucyRichardsonDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TFFTPrecision>
+template <class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>
+LucyRichardsonDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>
 ::LucyRichardsonDeconvolutionImageFilter()
 {
   m_Normalize = true;
@@ -43,15 +43,15 @@ LucyRichardsonDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutpu
   m_PadMethod = ZERO_FLUX_NEUMANN;
   m_NumberOfIterations = 10;
   m_RelativeChangeThreshold = 0;
-  m_RegularizationFilter = NULL;
+  m_SmoothingFilter = NULL;
   m_Iteration = 0;
   m_RelativeChange = 0;
   this->SetNumberOfRequiredInputs(2);
 }
 
-template <class TInputImage, class TPointSpreadFunction, class TOutputImage, class TFFTPrecision>
+template <class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>
 void 
-LucyRichardsonDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TFFTPrecision>
+LucyRichardsonDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>
 ::GenerateInputRequestedRegion()
 {
   // call the superclass' implementation of this method
@@ -68,9 +68,9 @@ LucyRichardsonDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutpu
 }
 
 
-template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TFFTPrecision>
+template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>
 void
-LucyRichardsonDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TFFTPrecision>
+LucyRichardsonDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>
 ::GenerateData()
 {
   // members used to monitor the iterations
@@ -131,7 +131,7 @@ LucyRichardsonDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutpu
   shift->SetReleaseDataFlag( true );
   // progress->RegisterInternalFilter( shift, 0.04f );
   
-  typedef itk::FFTRealToComplexConjugateImageFilter< FFTPrecisionType, ImageDimension > FFTType;
+  typedef itk::FFTRealToComplexConjugateImageFilter< InternalPrecisionType, ImageDimension > FFTType;
   typename FFTType::Pointer fftk = FFTType::New();
   fftk->SetInput( shift->GetOutput() );
   fftk->SetNumberOfThreads( this->GetNumberOfThreads() );
@@ -178,7 +178,7 @@ LucyRichardsonDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutpu
   mult->SetInPlace( true );
   // progress->RegisterInternalFilter( mult, 0.1f );
   
-  typedef itk::FFTComplexConjugateToRealImageFilter< FFTPrecisionType, ImageDimension > IFFTType;
+  typedef itk::FFTComplexConjugateToRealImageFilter< InternalPrecisionType, ImageDimension > IFFTType;
   typename IFFTType::Pointer ifft = IFFTType::New();
   ifft->SetInput( mult->GetOutput() );
   // we can't run a single update here: we have to set the
@@ -196,7 +196,7 @@ LucyRichardsonDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutpu
   typedef itk::BinaryFunctorImageFilter< InternalImageType,
                 InternalImageType,
                 InternalImageType,
-                typename Functor::EpsilonDivide< TFFTPrecision > >
+                typename Functor::EpsilonDivide< TInternalPrecision > >
                   EpsilonDivideType;
   typename EpsilonDivideType::Pointer ediv = EpsilonDivideType::New();
   ediv->SetInput( 1, pad->GetOutput() );
@@ -261,11 +261,11 @@ LucyRichardsonDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutpu
     {
     // should we use regularisation filter? -- tested in the iteration on purpose, to be able to
     // change the filter by looking at the iteration event
-    typename RegularizationFilterType::Pointer last = rmult.GetPointer();
-    if( m_RegularizationFilter.IsNotNull() )
+    typename SmoothingFilterType::Pointer last = rmult.GetPointer();
+    if( m_SmoothingFilter.IsNotNull() )
       {
-      m_RegularizationFilter->SetInput( rmult->GetOutput() );
-      last = m_RegularizationFilter;
+      m_SmoothingFilter->SetInput( rmult->GetOutput() );
+      last = m_SmoothingFilter;
       }
     last->Update();
     
@@ -316,9 +316,9 @@ LucyRichardsonDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutpu
   this->GraftOutput( crop->GetOutput() );
 }
 
-template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TFFTPrecision>
+template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>
 void
-LucyRichardsonDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TFFTPrecision>
+LucyRichardsonDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>
 ::PrintSelf(std::ostream &os, Indent indent) const
 {
   Superclass::PrintSelf(os, indent);
