@@ -199,6 +199,10 @@ public:
   itkGetConstMacro(RelativeChangeThreshold, double);
   itkSetMacro(RelativeChangeThreshold, double);
 
+  /**
+   * Set/Get the smoothing which is applied at the end of an iteration, each
+   * SmoothingPeriod iterations. Default is NULL (no smoothing).
+   */
   itkGetConstObjectMacro(SmoothingFilter, SmoothingFilterType);
   itkGetObjectMacro(SmoothingFilter, SmoothingFilterType);
   itkSetObjectMacro(SmoothingFilter, SmoothingFilterType);
