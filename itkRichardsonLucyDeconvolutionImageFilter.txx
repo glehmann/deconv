@@ -328,6 +328,17 @@ RichardsonLucyDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutpu
   os << indent << "NumberOfIterations: "  << m_NumberOfIterations << std::endl;
   os << indent << "RelativeChange: "  << m_RelativeChange << std::endl;
   os << indent << "RelativeChangeThreshold: "  << m_RelativeChangeThreshold << std::endl;
+  os << indent << "SmoothingPeriod: "  << m_SmoothingPeriod << std::endl;
+//  os << indent << "SmoothingFilter: "  << m_SmoothingFilter << std::endl;
+  os << indent << "SmoothingFilter: ";
+  if( m_SmoothingFilter.IsNull() )
+    {
+    std::cout << "NULL" << std::endl;
+    }
+  else
+    {
+    m_SmoothingFilter->Print( os, indent.GetNextIndent() );
+    }
   os << indent << "Normalize: "  << m_Normalize << std::endl;
   os << indent << "GreatestPrimeFactor: "  << m_GreatestPrimeFactor << std::endl;
   os << indent << "PadMethod: "  << m_PadMethod << std::endl;
