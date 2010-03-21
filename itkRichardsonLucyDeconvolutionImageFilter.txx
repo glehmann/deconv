@@ -197,9 +197,9 @@ RichardsonLucyDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutpu
   typedef itk::BinaryFunctorImageFilter< InternalImageType,
                 InternalImageType,
                 InternalImageType,
-                typename Functor::EpsilonDivide< TInternalPrecision > >
-                  EpsilonDivideType;
-  typename EpsilonDivideType::Pointer ediv = EpsilonDivideType::New();
+                typename Functor::RichardsonLucy< TInternalPrecision > >
+                  RichardsonLucyType;
+  typename RichardsonLucyType::Pointer ediv = RichardsonLucyType::New();
   ediv->SetInput( 1, pad->GetOutput() );
   ediv->SetInput( 0, ifft->GetOutput() );
   ediv->SetNumberOfThreads( this->GetNumberOfThreads() );

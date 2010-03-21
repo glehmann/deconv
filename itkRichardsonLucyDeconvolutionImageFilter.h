@@ -25,16 +25,16 @@ namespace itk {
 namespace Functor {  
   
 template< class TReal>
-class EpsilonDivide
+class RichardsonLucy
 {
 public:
-  EpsilonDivide() {};
-  ~EpsilonDivide() {};
-  bool operator!=( const EpsilonDivide & other ) const
+  RichardsonLucy() {};
+  ~RichardsonLucy() {};
+  bool operator!=( const RichardsonLucy & other ) const
     {
     return !(*this == other);
     }
-  bool operator==( const EpsilonDivide & other ) const
+  bool operator==( const RichardsonLucy & other ) const
     {
     return true;
     }
@@ -42,7 +42,11 @@ public:
   // of the denominator image
   inline TReal operator()( const TReal & d, const TReal & n )
     {
-    return n / ( d + NumericTraits< TReal >::min() + 1 );
+    if( d < 1e-5 )
+      {
+      return 0;
+      }
+    return n / (d+1);
     }
 };
 
