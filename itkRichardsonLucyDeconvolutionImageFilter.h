@@ -120,7 +120,7 @@ public:
                       TOutputImage::ImageDimension);
 
   typedef typename itk::Image< InternalPrecisionType, ImageDimension > InternalImageType;
-  typedef typename itk::ImageToImageFilter< InternalImageType, InternalImageType > SmoothingFilterType;
+  typedef typename itk::ImageToImageFilter< InternalImageType, InternalImageType > InternalFilterType;
   
   /** Standard New method. */
   itkNewMacro(Self);  
@@ -204,12 +204,12 @@ public:
   itkSetMacro(RelativeChangeThreshold, double);
 
   /**
-   * Set/Get the smoothing which is applied at the end of an iteration, each
+   * Set/Get the smoothing which filter is applied at the end of an iteration, each
    * SmoothingPeriod iterations. Default is NULL (no smoothing).
    */
-  itkGetConstObjectMacro(SmoothingFilter, SmoothingFilterType);
-  itkGetObjectMacro(SmoothingFilter, SmoothingFilterType);
-  itkSetObjectMacro(SmoothingFilter, SmoothingFilterType);
+  itkGetConstObjectMacro(SmoothingFilter, InternalFilterType);
+  itkGetObjectMacro(SmoothingFilter, InternalFilterType);
+  itkSetObjectMacro(SmoothingFilter, InternalFilterType);
 
   /**
    * Set/Get how often a smoothing is applied with the SmoothingFilter.
@@ -217,6 +217,15 @@ public:
    */
   itkGetConstMacro(SmoothingPeriod, int);
   itkSetMacro(SmoothingPeriod, int);
+
+  /**
+   * Set/Get the regularization filter which is applied during each iteration on
+   * the residual image. This filter should keep only the noise in the image.
+   * Default is NULL (no regularization).
+   */
+  itkGetConstObjectMacro(RegularizationFilter, InternalFilterType);
+  itkGetObjectMacro(RegularizationFilter, InternalFilterType);
+  itkSetObjectMacro(RegularizationFilter, InternalFilterType);
 
   itkGetConstMacro(Iteration, int);
   itkGetConstMacro(RelativeChange, double);
@@ -252,10 +261,11 @@ private:
   bool                                       m_Normalize;
   int                                        m_NumberOfIterations;
   double                                     m_RelativeChangeThreshold;
-  typename SmoothingFilterType::Pointer      m_SmoothingFilter;
+  typename InternalFilterType::Pointer       m_SmoothingFilter;
   int                                        m_Iteration;
   double                                     m_RelativeChange;
   int                                        m_SmoothingPeriod;
+  typename InternalFilterType::Pointer       m_RegularizationFilter;
 
 }; // end of class
 

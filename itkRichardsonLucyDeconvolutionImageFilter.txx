@@ -30,6 +30,8 @@
 #include "itkFFTComplexConjugateToRealImageFilter.h"
 #include "itkRegionFromReferenceImageFilter.h"
 #include "itkIntensityWindowingImageFilter.h"
+#include "itkAddImageFilter.h"
+#include "itkSubtractImageFilter.h"
 #include "itkRelativeChangeCalculator.h"
 
 namespace itk {
@@ -47,6 +49,7 @@ RichardsonLucyDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutpu
   m_Iteration = 0;
   m_RelativeChange = 0;
   m_SmoothingPeriod = 1;
+  m_RegularizationFilter = NULL;
   this->SetNumberOfRequiredInputs(2);
 }
 
@@ -192,8 +195,38 @@ RichardsonLucyDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutpu
   // progress->RegisterInternalFilter( ifft, 0.25f );
 
   // input convolution completed
+  
+  // do we have to do some work on the residual?
+  typedef itk::SubtractImageFilter< InternalImageType,
+                InternalImageType,
+                InternalImageType > SubtractType;
+  typename SubtractType::Pointer sub;
+  typedef itk::AddImageFilter< InternalImageType,
+                InternalImageType,
+                InternalImageType > AddType;
+  typename AddType::Pointer add;
+  if( m_RegularizationFilter.IsNotNull() )
+    {
+    // yes, we do, so we have to compute it
+    sub = SubtractType::New();
+    sub->SetInput( 0, pad->GetOutput() );
+    sub->SetInput( 1, ifft->GetOutput() );
+    sub->SetNumberOfThreads( this->GetNumberOfThreads() );
+    sub->SetReleaseDataFlag( true );
+    // don't run in place - we need to keep the input image
+    // sub->SetInPlace( true );
+    // connect the regularization filter
+    m_RegularizationFilter->SetInput( sub->GetOutput() );
+    // and recompute I at iteration n
+    add = AddType::New();
+    add->SetInput( 0, pad->GetOutput() );
+    add->SetInput( 1, m_RegularizationFilter->GetOutput() );
+    add->SetNumberOfThreads( this->GetNumberOfThreads() );
+    add->SetReleaseDataFlag( true );
+    add->SetInPlace( true );
+    }
+  
   // divide the input by (the convolved image + epsilon)
-
   typedef itk::BinaryFunctorImageFilter< InternalImageType,
                 InternalImageType,
                 InternalImageType,
@@ -201,7 +234,14 @@ RichardsonLucyDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutpu
                   RichardsonLucyType;
   typename RichardsonLucyType::Pointer ediv = RichardsonLucyType::New();
   ediv->SetInput( 1, pad->GetOutput() );
-  ediv->SetInput( 0, ifft->GetOutput() );
+  if( m_RegularizationFilter.IsNull() )
+    {
+    ediv->SetInput( 0, ifft->GetOutput() );
+    }
+  else
+    {
+    ediv->SetInput( 0, add->GetOutput() );
+    }
   ediv->SetNumberOfThreads( this->GetNumberOfThreads() );
   ediv->SetReleaseDataFlag( true );
   ediv->SetInPlace( true );
@@ -260,9 +300,9 @@ RichardsonLucyDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutpu
   typename InternalImageType::Pointer img = pad->GetOutput();
   for( m_Iteration=1; m_Iteration<=m_NumberOfIterations; m_Iteration++ )
     {
-    // should we use regularisation filter? -- tested in the iteration on purpose, to be able to
+    // should we use smoothing filter? -- tested in the iteration on purpose, to be able to
     // change the filter by looking at the iteration event
-    typename SmoothingFilterType::Pointer last = rmult.GetPointer();
+    typename InternalFilterType::Pointer last = rmult.GetPointer();
     if( m_SmoothingFilter.IsNotNull() && m_Iteration % m_SmoothingPeriod == 0 )
       {
       m_SmoothingFilter->SetInput( rmult->GetOutput() );
@@ -338,6 +378,15 @@ RichardsonLucyDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutpu
   else
     {
     m_SmoothingFilter->Print( os, indent.GetNextIndent() );
+    }
+  os << indent << "RegularizationFilter: ";
+  if( m_RegularizationFilter.IsNull() )
+    {
+    std::cout << "NULL" << std::endl;
+    }
+  else
+    {
+    m_RegularizationFilter->Print( os, indent.GetNextIndent() );
     }
   os << indent << "Normalize: "  << m_Normalize << std::endl;
   os << indent << "GreatestPrimeFactor: "  << m_GreatestPrimeFactor << std::endl;
