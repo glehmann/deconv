@@ -40,39 +40,9 @@ template <class TInputImage, class TPointSpreadFunction, class TOutputImage, cla
 VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision, TFunctor>
 ::VanCittertDeconvolutionImageFilter()
 {
-  m_Normalize = true;
-  m_GreatestPrimeFactor = 13;
-  m_PadMethod = ZERO_FLUX_NEUMANN;
-  m_NumberOfIterations = 10;
-  m_RelativeChangeThreshold = 0;
-  m_SmoothingFilter = NULL;
-  m_Iteration = 0;
-  m_RelativeChange = 0;
-  m_SmoothingPeriod = 1;
-  m_RegularizationFilter = NULL;
   m_Alpha = 1;
   m_NonNegativity = true;
-  this->SetNumberOfRequiredInputs(2);
 }
-
-template <class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision, class TFunctor>
-void 
-VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision, TFunctor>
-::GenerateInputRequestedRegion()
-{
-  // call the superclass' implementation of this method
-  Superclass::GenerateInputRequestedRegion();
-  
-  InputImageType * input0 = const_cast<InputImageType *>(this->GetInput());
-  InputImageType * input1 = const_cast<PointSpreadFunctionType *>(this->GetPointSpreadFunction());
-  if ( !input0 || !input1 )
-    { 
-    return;
-    }
-  input0->SetRequestedRegion( input0->GetLargestPossibleRegion() );
-  input1->SetRequestedRegion( input1->GetLargestPossibleRegion() );
-}
-
 
 template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision, class TFunctor>
 void
@@ -80,118 +50,42 @@ VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputIma
 ::GenerateData()
 {
   // members used to monitor the iterations
-  m_Iteration = 0;
-  m_RelativeChange = 0;
+  this->SetIteration( 0 );
+  this->SetRelativeChange( 0.0 );
   
-  this->AllocateOutputs();
-  const InputImageType * input = this->GetInput();
-  const PointSpreadFunctionType * kernel = this->GetPointSpreadFunction();
-  OutputImageType * output = this->GetOutput();
-
-  // Create a process accumulator for tracking the progress of this minipipeline
-  // ProgressAccumulator::Pointer progress = ProgressAccumulator::New();
-  // progress->SetMiniPipelineFilter(this);
-
-  typedef itk::FlipImageFilter< PointSpreadFunctionType > FlipType;
-  typename FlipType::Pointer flip = FlipType::New();
-  flip->SetInput( kernel );
-  typename FlipType::FlipAxesArrayType axes;
-  axes.Fill( true ); // we must flip all the axes
-  flip->SetFlipAxes( axes );
-  flip->SetNumberOfThreads( this->GetNumberOfThreads() );
-  flip->SetReleaseDataFlag( true );
-  // progress->RegisterInternalFilter( flip, 0.005f );
-
-  typedef itk::ImageToImageFilter< PointSpreadFunctionType, InternalImageType > NormType;
-  typedef itk::NormalizeToConstantImageFilter< PointSpreadFunctionType, InternalImageType > NormConstType;
-  typedef itk::CastImageFilter< PointSpreadFunctionType, InternalImageType > CastType;
-  typename NormType::Pointer norm;
-  if( m_Normalize )
-    {
-    norm = NormConstType::New();
-    }
-  else
-    {
-    norm = CastType::New();
-    }
-  norm->SetInput( flip->GetOutput() );
-  norm->SetNumberOfThreads( this->GetNumberOfThreads() );
-  norm->SetReleaseDataFlag( true );
-  // progress->RegisterInternalFilter( norm, 0.005f );
-
-  typedef itk::FFTPadImageFilter< InputImageType, InternalImageType, InternalImageType, InternalImageType > PadType;
-  typename PadType::Pointer pad = PadType::New();
-  pad->SetInput( input );
-  pad->SetInputKernel( norm->GetOutput() );
-  pad->SetNumberOfThreads( this->GetNumberOfThreads() );
-  // the padded image is reused several time, so it shouldn't be released
-  // pad->SetReleaseDataFlag( true );
-  pad->SetPadMethod( m_PadMethod );
-  // progress->RegisterInternalFilter( pad, 0.05f );
-
-  typedef itk::FFTShiftImageFilter< InternalImageType, InternalImageType > ShiftType;
-  typename ShiftType::Pointer shift = ShiftType::New();
-  shift->SetInput( pad->GetOutputKernel() );
-  shift->SetInverse( true );
-  shift->SetNumberOfThreads( this->GetNumberOfThreads() );
-  shift->SetReleaseDataFlag( true );
-  // progress->RegisterInternalFilter( shift, 0.04f );
+  InternalImagePointerType input;
+  ComplexImagePointerType psf;
+  bool xIsOdd;
   
-  typedef itk::FFTRealToComplexConjugateImageFilter< InternalPrecisionType, ImageDimension > FFTType;
-  typename FFTType::Pointer fftk = FFTType::New();
-  fftk->SetInput( shift->GetOutput() );
-  fftk->SetNumberOfThreads( this->GetNumberOfThreads() );
-  // don't release the data here: we must keep it for the iterations
-  // fftk->SetReleaseDataFlag( true );
-  // progress->RegisterInternalFilter( fftk, 0.25f );
-  
-  // vnl filters need a size which is a power of 2
-  if( std::string(fftk->GetNameOfClass()).find("Vnl") == 0 )
-    {
-    pad->SetPadToPowerOfTwo( true );
-    // fake the cyclic behavior
-    if( m_PadMethod == NO_PADDING )
-      {
-      pad->SetPadMethod( WRAP );
-      }
-    }
-  else
-    {
-    pad->SetGreatestPrimeFactor( m_GreatestPrimeFactor );
-    }
-
+  this->Init( input, psf, xIsOdd, 0 );
 
   // iterated code from here
   
   // first convolve the input image by the psf
   
-  typename FFTType::Pointer fft = FFTType::New();
-  fft->SetInput( pad->GetOutput() );
+  typename FFTFilterType::Pointer fft = FFTFilterType::New();
+  fft->SetInput( input );
   fft->SetNumberOfThreads( this->GetNumberOfThreads() );
   fft->SetReleaseDataFlag( true );
   // progress->RegisterInternalFilter( fft, 0.25f );
 
-  typedef typename FFTType::OutputImagePixelType ComplexType;
+  typedef typename FFTFilterType::OutputImagePixelType ComplexType;
   
-  typedef itk::MultiplyImageFilter< typename FFTType::OutputImageType,
-                typename FFTType::OutputImageType,
-                typename FFTType::OutputImageType > MultType;
+  typedef itk::MultiplyImageFilter< typename FFTFilterType::OutputImageType,
+                typename FFTFilterType::OutputImageType,
+                typename FFTFilterType::OutputImageType > MultType;
   typename MultType::Pointer mult = MultType::New();
   mult->SetInput( 0, fft->GetOutput() );
-  mult->SetInput( 1, fftk->GetOutput() );
+  mult->SetInput( 1, psf );
   mult->SetNumberOfThreads( this->GetNumberOfThreads() );
   mult->SetReleaseDataFlag( true );
   mult->SetInPlace( true );
   // progress->RegisterInternalFilter( mult, 0.1f );
   
-  typedef itk::FFTComplexConjugateToRealImageFilter< InternalPrecisionType, ImageDimension > IFFTType;
-  typename IFFTType::Pointer ifft = IFFTType::New();
+  typedef itk::FFTComplexConjugateToRealImageFilter< InternalPrecisionType, ImageDimension > IFFTFilterType;
+  typename IFFTFilterType::Pointer ifft = IFFTFilterType::New();
   ifft->SetInput( mult->GetOutput() );
-  // we can't run a single update here: we have to set the
-  // ActualXDimensionIsOdd attribute, which can be done only after the update of
-  // output information of the pad filter
-  pad->UpdateOutputInformation();
-  ifft->SetActualXDimensionIsOdd( pad->GetOutput()->GetLargestPossibleRegion().GetSize()[0] % 2 );
+  ifft->SetActualXDimensionIsOdd( xIsOdd );
   ifft->SetNumberOfThreads( this->GetNumberOfThreads() );
   ifft->SetReleaseDataFlag( true );
   // progress->RegisterInternalFilter( ifft, 0.25f );
@@ -203,17 +97,17 @@ VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputIma
                 InternalImageType,
                 InternalImageType > SubtractType;
   typename SubtractType::Pointer sub = SubtractType::New();
-  sub->SetInput( 0, pad->GetOutput() );
+  sub->SetInput( 0, input );
   sub->SetInput( 1, ifft->GetOutput() );
   sub->SetNumberOfThreads( this->GetNumberOfThreads() );
   sub->SetReleaseDataFlag( true );
   // don't run in place - we need to keep the input image
   // sub->SetInPlace( true );
 
-  if( m_RegularizationFilter.IsNotNull() )
+  if( this->GetRegularizationFilter() != NULL )
     {
     // connect the regularization filter
-    m_RegularizationFilter->SetInput( sub->GetOutput() );
+    this->GetRegularizationFilter()->SetInput( sub->GetOutput() );
     }
   
   typedef itk::BinaryFunctorImageFilter< InternalImageType,
@@ -222,14 +116,14 @@ VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputIma
                 FunctorType >
                   VanCittertType;
   typename VanCittertType::Pointer add = VanCittertType::New();
-  add->SetInput( 1, pad->GetOutput() );
-  if( m_RegularizationFilter.IsNull() )
+  add->SetInput( 1, input );
+  if( this->GetRegularizationFilter() == NULL )
     {
     add->SetInput( 0, sub->GetOutput() );
     }
   else
     {
-    add->SetInput( 0, m_RegularizationFilter->GetOutput() );
+    add->SetInput( 0, this->GetRegularizationFilter()->GetOutput() );
     }
   this->InitFunctor( add->GetFunctor() );
   add->SetNumberOfThreads( this->GetNumberOfThreads() );
@@ -240,16 +134,17 @@ VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputIma
   // begin the iterations
   typedef typename itk::RelativeChangeCalculator< InternalImageType > ChangeType;
   typename ChangeType::Pointer change = ChangeType::New();
-  typename InternalImageType::Pointer img = pad->GetOutput();
-  for( m_Iteration=1; m_Iteration<=m_NumberOfIterations; m_Iteration++ )
+  typename InternalImageType::Pointer img = input;
+  for( int i=1; i<=this->GetNumberOfIterations(); i++ )
     {
+    this->SetIteration( i );
     // should we use smoothing filter? -- tested in the iteration on purpose, to be able to
     // change the filter by looking at the iteration event
     typename InternalFilterType::Pointer last = add.GetPointer();
-    if( m_SmoothingFilter.IsNotNull() && m_Iteration % m_SmoothingPeriod == 0 )
+    if( this->GetSmoothingFilter() != NULL && i % this->GetSmoothingPeriod() == 0 )
       {
-      m_SmoothingFilter->SetInput( add->GetOutput() );
-      last = m_SmoothingFilter;
+      this->GetSmoothingFilter()->SetInput( add->GetOutput() );
+      last = this->GetSmoothingFilter();
       }
     last->Update();
     
@@ -258,8 +153,8 @@ VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputIma
     change->SetNewImage( last->GetOutput() );
     change->Compute();
     // std::cout << change->GetOutput() << std::endl;
-    m_RelativeChange = change->GetOutput();
-    if( m_RelativeChangeThreshold > 0 && m_RelativeChange < m_RelativeChangeThreshold )
+    this->SetRelativeChange( change->GetOutput() );
+    if( this->GetRelativeChangeThreshold() > 0 && this->GetRelativeChange() < this->GetRelativeChangeThreshold() )
       {
       break;
       }
@@ -270,34 +165,14 @@ VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputIma
       img->DisconnectPipeline();
       fft->SetInput( img );
       add->SetInput( 1, img );
-      this->UpdateProgress( m_Iteration/(float)m_NumberOfIterations );
+      this->UpdateProgress( i/(float)this->GetNumberOfIterations() );
       this->InvokeEvent( IterationEvent() );
       }
     }
   img->SetReleaseDataFlag( true );
   this->UpdateProgress( 1.0 );
-  m_Iteration--; // to have the real number of iterations
    
-  typedef itk::IntensityWindowingImageFilter< InternalImageType, OutputImageType > WindowType;
-  typename WindowType::Pointer window = WindowType::New();
-  window->SetInput( img );
-  window->SetWindowMinimum( NumericTraits< OutputImagePixelType >::Zero );
-  window->SetWindowMaximum( NumericTraits< OutputImagePixelType >::max() );
-  window->SetNumberOfThreads( this->GetNumberOfThreads() );
-  window->SetReleaseDataFlag( true );
-  window->SetInPlace( true );
-  // progress->RegisterInternalFilter( window, 0.025f );
-  
-  typedef itk::RegionFromReferenceImageFilter< OutputImageType, OutputImageType > CropType;
-  typename CropType::Pointer crop = CropType::New();
-  crop->SetInput( window->GetOutput() );
-  crop->SetReferenceImage( input );
-  crop->SetNumberOfThreads( this->GetNumberOfThreads() );
-  // progress->RegisterInternalFilter( crop, 0.025f );
-  
-  crop->GraftOutput( output );
-  crop->Update();
-  this->GraftOutput( crop->GetOutput() );
+  this->End( img, 0 );
 }
 
 
@@ -320,35 +195,8 @@ VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputIma
 {
   Superclass::PrintSelf(os, indent);
 
-  os << indent << "Iteration: "  << m_Iteration << std::endl;
-  os << indent << "NumberOfIterations: "  << m_NumberOfIterations << std::endl;
   os << indent << "Alpha: "  << m_Alpha << std::endl;
   os << indent << "NonNegativity: "  << m_NonNegativity << std::endl;
-  os << indent << "RelativeChange: "  << m_RelativeChange << std::endl;
-  os << indent << "RelativeChangeThreshold: "  << m_RelativeChangeThreshold << std::endl;
-  os << indent << "SmoothingPeriod: "  << m_SmoothingPeriod << std::endl;
-//  os << indent << "SmoothingFilter: "  << m_SmoothingFilter << std::endl;
-  os << indent << "SmoothingFilter: ";
-  if( m_SmoothingFilter.IsNull() )
-    {
-    std::cout << "NULL" << std::endl;
-    }
-  else
-    {
-    m_SmoothingFilter->Print( os, indent.GetNextIndent() );
-    }
-  os << indent << "RegularizationFilter: ";
-  if( m_RegularizationFilter.IsNull() )
-    {
-    std::cout << "NULL" << std::endl;
-    }
-  else
-    {
-    m_RegularizationFilter->Print( os, indent.GetNextIndent() );
-    }
-  os << indent << "Normalize: "  << m_Normalize << std::endl;
-  os << indent << "GreatestPrimeFactor: "  << m_GreatestPrimeFactor << std::endl;
-  os << indent << "PadMethod: "  << m_PadMethod << std::endl;
 }
 
 }// end namespace itk
