@@ -61,7 +61,7 @@ public:
  *
  * \sa FFTShiftImageFilter NormalizeToConstantImageFilter FFTRealToComplexConjugateImageFilter
  */
-template<class TInputImage, class TPointSpreadFunction=TInputImage, class TOutputImage=TInputImage, class TInternalPrecision=float>
+template<class TInputImage, class TPointSpreadFunction=TInputImage, class TOutputImage=TInputImage, class TInternalPrecision=float, class TFunctor=Functor::VanCittert<TInternalPrecision> >
 class ITK_EXPORT VanCittertDeconvolutionImageFilter : 
     public ImageToImageFilter<TInputImage, TOutputImage>
 {
@@ -79,6 +79,7 @@ public:
   typedef TPointSpreadFunction                             PointSpreadFunctionType;
   typedef TOutputImage                             OutputImageType;
   typedef TInternalPrecision                            InternalPrecisionType;
+  typedef TFunctor                                 FunctorType;
   typedef typename InputImageType::Pointer         InputImagePointer;
   typedef typename InputImageType::ConstPointer    InputImageConstPointer;
   typedef typename InputImageType::PixelType       InputImagePixelType;
@@ -245,6 +246,8 @@ protected:
   void GenerateData();
   
   void PrintSelf(std::ostream& os, Indent indent) const;
+
+  virtual void InitFunctor( FunctorType & functor );
 
 private:
   VanCittertDeconvolutionImageFilter(const Self&); //purposely not implemented

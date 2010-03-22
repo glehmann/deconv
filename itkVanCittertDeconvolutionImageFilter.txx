@@ -36,8 +36,8 @@
 
 namespace itk {
 
-template <class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>
-VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>
+template <class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision, class TFunctor>
+VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision, TFunctor>
 ::VanCittertDeconvolutionImageFilter()
 {
   m_Normalize = true;
@@ -55,9 +55,9 @@ VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputIma
   this->SetNumberOfRequiredInputs(2);
 }
 
-template <class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>
+template <class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision, class TFunctor>
 void 
-VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>
+VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision, TFunctor>
 ::GenerateInputRequestedRegion()
 {
   // call the superclass' implementation of this method
@@ -74,9 +74,9 @@ VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputIma
 }
 
 
-template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>
+template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision, class TFunctor>
 void
-VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>
+VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision, TFunctor>
 ::GenerateData()
 {
   // members used to monitor the iterations
@@ -219,7 +219,7 @@ VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputIma
   typedef itk::BinaryFunctorImageFilter< InternalImageType,
                 InternalImageType,
                 InternalImageType,
-                typename Functor::VanCittert< TInternalPrecision > >
+                FunctorType >
                   VanCittertType;
   typename VanCittertType::Pointer add = VanCittertType::New();
   add->SetInput( 1, pad->GetOutput() );
@@ -231,8 +231,7 @@ VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputIma
     {
     add->SetInput( 0, m_RegularizationFilter->GetOutput() );
     }
-  add->GetFunctor().m_Alpha = m_Alpha;
-  add->GetFunctor().m_NonNegativity = m_NonNegativity;
+  this->InitFunctor( add->GetFunctor() );
   add->SetNumberOfThreads( this->GetNumberOfThreads() );
   add->SetReleaseDataFlag( true );
   add->SetInPlace( true );
@@ -301,9 +300,22 @@ VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputIma
   this->GraftOutput( crop->GetOutput() );
 }
 
-template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>
+
+template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision, class TFunctor>
 void
-VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>
+VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision, TFunctor>
+::InitFunctor( FunctorType & functor )
+{
+  functor.m_Alpha = m_Alpha;
+  functor.m_NonNegativity = m_NonNegativity;
+  // std::cout << "functor.m_Alpha: " << functor.m_Alpha << std::endl;
+  // std::cout << "functor.m_NonNegativity: " << functor.m_NonNegativity << std::endl;
+}
+
+
+template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision, class TFunctor>
+void
+VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision, TFunctor>
 ::PrintSelf(std::ostream &os, Indent indent) const
 {
   Superclass::PrintSelf(os, indent);
