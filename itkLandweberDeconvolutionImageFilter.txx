@@ -31,7 +31,7 @@ template <class TInputImage, class TPointSpreadFunction, class TOutputImage, cla
 LandweberDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision, TFunctor>
 ::LandweberDeconvolutionImageFilter()
 {
-  m_Alpha = 0.5;
+  m_Alpha = 1;
   m_NonNegativity = true;
 }
 
