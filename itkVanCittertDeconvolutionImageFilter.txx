@@ -18,18 +18,8 @@
 #define __itkVanCittertDeconvolutionImageFilter_txx
 
 #include "itkVanCittertDeconvolutionImageFilter.h"
-#include "itkProgressAccumulator.h"
-#include "itkFlipImageFilter.h"
-#include "itkFFTPadImageFilter.h"
-#include "itkNormalizeToConstantImageFilter.h"
-#include "itkCastImageFilter.h"
-#include "itkFFTShiftImageFilter.h"
-#include "itkFFTRealToComplexConjugateImageFilter.h"
 #include "itkBinaryFunctorImageFilter.h"
 #include "itkMultiplyImageFilter.h"
-#include "itkFFTComplexConjugateToRealImageFilter.h"
-#include "itkRegionFromReferenceImageFilter.h"
-#include "itkIntensityWindowingImageFilter.h"
 #include "itkAddImageFilter.h"
 #include "itkSubtractImageFilter.h"
 #include "itkRelativeChangeCalculator.h"
