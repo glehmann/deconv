@@ -50,26 +50,6 @@ public:
     }
 };
 
-template< class TComplex>
-class MultiplyByComplexConjugate
-{
-public:
-  typedef typename TComplex::value_type RealType;
-  MultiplyByComplexConjugate() {};
-  ~MultiplyByComplexConjugate() {};
-  bool operator!=( const MultiplyByComplexConjugate & other ) const
-    {
-    return !(*this == other);
-    }
-  bool operator==( const MultiplyByComplexConjugate & other ) const
-    {
-    return true;
-    }
-  inline TComplex operator()( const TComplex & c1, const TComplex & c2 )
-    {
-    return c1 * std::conj(c2);
-    }
-};
 }
 
 /** \class RichardsonLucyDeconvolutionImageFilter

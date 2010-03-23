@@ -22,6 +22,7 @@
 #include "itkMultiplyImageFilter.h"
 #include "itkAddImageFilter.h"
 #include "itkSubtractImageFilter.h"
+#include "itkMultiplyByComplexConjugateImageFilter.h"
 #include "itkRelativeChangeCalculator.h"
 
 namespace itk {
@@ -129,11 +130,7 @@ RichardsonLucyDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutpu
   fft2->SetReleaseDataFlag( true );
   // progress->RegisterInternalFilter( fft, 0.25f );
 
-  typedef itk::BinaryFunctorImageFilter< ComplexImageType,
-                ComplexImageType,
-                ComplexImageType,
-                typename Functor::MultiplyByComplexConjugate< ComplexType > >
-                  MultiplyByComplexConjugateType;
+  typedef itk::MultiplyByComplexConjugateImageFilter< ComplexImageType > MultiplyByComplexConjugateType;
   typename MultiplyByComplexConjugateType::Pointer cmult = MultiplyByComplexConjugateType::New();
   cmult->SetInput( 0, fft2->GetOutput() );
   cmult->SetInput( 1, psf );
