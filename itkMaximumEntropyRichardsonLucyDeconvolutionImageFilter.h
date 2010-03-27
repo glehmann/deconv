@@ -74,7 +74,7 @@ public:
       // avoid computing ln(0)
       return 0;
       }
-    return e * x - ( m_Lambda * x * vcl_log( x ) );
+    return std::max( e * x - ( m_Lambda * x * vcl_log( x ) ), NumericTraits< TReal >::Zero );
     }
   TReal m_Lambda;
 };
