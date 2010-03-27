@@ -46,7 +46,7 @@ public:
       {
       return 0;
       }
-    return n / (d+1);
+    return n / d;
     }
 };
 
