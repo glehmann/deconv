@@ -3,6 +3,7 @@
 #include "itkSmoothingRecursiveGaussianImageFilter.h"
 #include "itkRescaleIntensityImageFilter.h"
 #include "itkTestingMacros.h"
+#include "itkMath.h"
 
 
 int main(int argc, char * argv[])
@@ -23,18 +24,18 @@ int main(int argc, char * argv[])
   
   RIType::Pointer img = RIType::New();
   RIType::SizeType s;
-  s.Fill( atoi(argv[2]) * 3 * 2 + 1 );
+  s.Fill( (int)itk::Math::Ceil(atof(argv[2])) * 3 * 2 + 1 );
   img->SetRegions( s );
   img->Allocate();
   img->FillBuffer( 0 );
   RIType::IndexType idx;
-  idx.Fill( atoi(argv[2]) * 3 );
+  idx.Fill( s[0]/2 );
   img->SetPixel( idx, 1.0 );
 
   typedef itk::SmoothingRecursiveGaussianImageFilter< RIType, RIType > GaussType;
   GaussType::Pointer gauss = GaussType::New();
   gauss->SetInput( img );
-  gauss->SetSigma( atoi(argv[2]) );
+  gauss->SetSigma( atof(argv[2]) );
 
   typedef unsigned char PType;
   typedef itk::Image< PType, dim > IType;
