@@ -103,18 +103,21 @@ LaplacianImageFilter< TInputImage, TOutputImage >
   
   // Create the Laplacian operator
   LaplacianOperator<OutputPixelType, ImageDimension> oper;
-  for (unsigned i = 0; i < ImageDimension; i++)
+  if( m_UseImageSpacing )
     {
-    if (this->GetInput()->GetSpacing()[i] == 0.0 )
+    for (unsigned i = 0; i < ImageDimension; i++)
       {
-      itkExceptionMacro( << "Image spacing cannot be zero" );
+      if (this->GetInput()->GetSpacing()[i] == 0.0 )
+        {
+        itkExceptionMacro( << "Image spacing cannot be zero" );
+        }
+      else
+        {
+        s[i] = 1.0 / this->GetInput()->GetSpacing()[i];
+        }
       }
-    else
-      {
-      s[i] = 1.0 / this->GetInput()->GetSpacing()[i];
-      }
+    oper.SetDerivativeScalings( s );
     }
-  oper.SetDerivativeScalings( s );
   oper.CreateOperator();
 
   
