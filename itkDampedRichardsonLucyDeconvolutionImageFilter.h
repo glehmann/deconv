@@ -46,7 +46,7 @@ public:
     assert( !std::isnan( i ) );
     assert( !std::isnan( m_T ) );
     assert( !std::isnan( m_N ) );
-    if( o < 1e-4 || i < 1e-4 || m_T < 1e-4 )
+    if( o < 1e-5 || i < 1e-5 || m_T < 1e-5 )
       {
       return NumericTraits<TReal>::One;
       }
