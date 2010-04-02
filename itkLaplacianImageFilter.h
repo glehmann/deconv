@@ -96,6 +96,16 @@ public:
   itkGetConstMacro(UseImageSpacing, bool);
   itkBooleanMacro(UseImageSpacing);
   
+  /** Set/Get whether or not the filter will normalize the coefficient to make
+  central coefficient be one. This is useful to make the value independent of the
+  dimension - that way the value is the same for a single isolated pixel in an image
+  in 2D and in 3D. It is also useful to make the value independent of the image spacing
+  but still keeping a spacing weight.
+  Default is false. */
+  itkSetMacro(NormalizeToOne, bool);
+  itkGetConstMacro(NormalizeToOne, bool);
+  itkBooleanMacro(NormalizeToOne);
+  
 #ifdef ITK_USE_CONCEPT_CHECKING
   /** Begin concept checking */
   itkConceptMacro(SameDimensionCheck,
@@ -111,6 +121,7 @@ protected:
   LaplacianImageFilter()
     {
     m_UseImageSpacing = true;
+    m_UseImageSpacing = false;
     }
   virtual ~LaplacianImageFilter()  {}
 
@@ -135,6 +146,7 @@ private:
   LaplacianImageFilter(const Self&); //purposely not implemented
   void operator=(const Self&); //purposely not implemented
   bool m_UseImageSpacing;
+  bool m_NormalizeToOne;
   
 };
   

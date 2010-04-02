@@ -161,6 +161,7 @@ TikhonovMillerRichardsonLucyDeconvolutionImageFilter<TInputImage, TPointSpreadFu
   typedef LaplacianImageFilter< InternalImageType, InternalImageType > LaplacianType;
   typename LaplacianType::Pointer laplacian = LaplacianType::New();
   laplacian->SetInput( input );
+  laplacian->SetNormalizeToOne( true );
   laplacian->SetNumberOfThreads( this->GetNumberOfThreads() );
   laplacian->SetReleaseDataFlag( true );
   

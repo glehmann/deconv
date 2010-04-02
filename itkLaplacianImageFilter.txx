@@ -32,7 +32,8 @@ LaplacianImageFilter< TInputImage, TOutputImage >
 ::PrintSelf(std::ostream& os, Indent indent) const  
 {
   Superclass::PrintSelf(os,indent);
-  os << indent << "UseImageSpacing = " << m_UseImageSpacing << std::endl;
+  os << indent << "UseImageSpacing: " << m_UseImageSpacing << std::endl;
+  os << indent << "NormalizeToOne: " << m_NormalizeToOne << std::endl;
 }
 
 
@@ -116,8 +117,33 @@ LaplacianImageFilter< TInputImage, TOutputImage >
         s[i] = 1.0 / this->GetInput()->GetSpacing()[i];
         }
       }
-    oper.SetDerivativeScalings( s );
     }
+  else
+    {
+    for (unsigned i = 0; i < ImageDimension; i++)
+      {
+      s[i] = 1.0;
+      }
+    }
+  if( m_NormalizeToOne )
+    {
+    // make sure that the sum of the inverse of the square of the spacing is ImageDimension
+    double sum = 0;
+    for (unsigned i = 0; i < ImageDimension; i++)
+      {
+      if( s[i] == 0.0 )
+        {
+        itkExceptionMacro( << "Image spacing cannot be zero" );
+        }
+      sum += s[i] * s[i];
+      }
+    double scale = vcl_sqrt( 1.0 / sum );
+    for (unsigned i = 0; i < ImageDimension; i++)
+      {
+      s[i] *= scale;
+      }
+    }
+  oper.SetDerivativeScalings( s );
   oper.CreateOperator();
 
   
