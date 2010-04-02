@@ -165,6 +165,7 @@ LaplacianImageFilter< TInputImage, TOutputImage >
   //
   filter->SetOperator(oper);
   filter->SetInput(this->GetInput());
+  filter->SetNumberOfThreads( this->GetNumberOfThreads() );
 
   // graft this filter's output to the mini-pipeline.  this sets up
   // the mini-pipeline to write to this filter's output and copies
