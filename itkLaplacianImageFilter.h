@@ -90,30 +90,12 @@ public:
   /** Method for creation through the object factory.  */
   itkNewMacro(Self);
 
-  /** LaplacianImageFilter needs a larger input requested region than
-   * the output requested region (larger in the direction of the
-   * derivative).  As such, LaplacianImageFilter needs to provide an
-   * implementation for GenerateInputRequestedRegion() in order to
-   * inform the pipeline execution model.
-   *
-   * \sa ImageToImageFilter::GenerateInputRequestedRegion()  */
-  virtual void GenerateInputRequestedRegion() throw(InvalidRequestedRegionError);
-
-  /** Use the image spacing information in calculations. Use this option if you
-   *  want derivatives in physical space. Default is UseImageSpacingOn. */
-  void SetUseImageSpacingOn()
-    { this->SetUseImageSpacing(true); }
-  
-  /** Ignore the image spacing. Use this option if you want derivatives in
-      isotropic pixel space.  Default is UseImageSpacingOn. */
-  void SetUseImageSpacingOff()
-    { this->SetUseImageSpacing(false); }
-  
   /** Set/Get whether or not the filter will use the spacing of the input
       image in its calculations */
   itkSetMacro(UseImageSpacing, bool);
   itkGetConstMacro(UseImageSpacing, bool);
-
+  itkBooleanMacro(UseImageSpacing);
+  
 #ifdef ITK_USE_CONCEPT_CHECKING
   /** Begin concept checking */
   itkConceptMacro(SameDimensionCheck,
@@ -139,6 +121,15 @@ protected:
    * multithreaded by default.   */
   void GenerateData();
   void PrintSelf(std::ostream&, Indent) const;
+
+  /** LaplacianImageFilter needs a larger input requested region than
+   * the output requested region (larger in the direction of the
+   * derivative).  As such, LaplacianImageFilter needs to provide an
+   * implementation for GenerateInputRequestedRegion() in order to
+   * inform the pipeline execution model.
+   *
+   * \sa ImageToImageFilter::GenerateInputRequestedRegion()  */
+  virtual void GenerateInputRequestedRegion() throw(InvalidRequestedRegionError);
 
 private:
   LaplacianImageFilter(const Self&); //purposely not implemented
