@@ -76,8 +76,8 @@ public:
     assert( !std::isnan( i ) );
     assert( !std::isnan( v ) );
     assert( !std::isnan( m_Q ) );
-    if( std::isnan( vcl_pow( v, m_Q ) ) )
-      std::cout << "v: " << v << "  m_Q: " << m_Q << std::endl;
+//     if( std::isnan( vcl_pow( v, m_Q ) ) )
+//       std::cout << "v: " << v << "  m_Q: " << m_Q << std::endl;
     assert( !std::isnan( vcl_pow( v, m_Q ) ) );
     assert( !std::isnan( i * vcl_pow( v, m_Q ) ) );
     return i * vcl_pow( v, m_Q );
