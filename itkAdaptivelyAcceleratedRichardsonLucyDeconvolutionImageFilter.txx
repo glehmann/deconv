@@ -29,6 +29,7 @@
 #include "itkNeighborhoodInnerProduct.h"
 #include "itkConstNeighborhoodIterator.h"
 #include "itkForwardDifferenceOperator.h"
+#include "itkDivideOrZeroOutImageFilter.h"
 
 namespace itk {
 
@@ -83,12 +84,8 @@ AdaptivelyAcceleratedRichardsonLucyDeconvolutionImageFilter<TInputImage, TPointS
   // input convolution completed
   
   // divide the input by (the convolved image + epsilon)
-  typedef itk::BinaryFunctorImageFilter< InternalImageType,
-                InternalImageType,
-                InternalImageType,
-                typename Functor::AdaptivelyAcceleratedRichardsonLucy< TInternalPrecision > >
-                  AdaptivelyAcceleratedRichardsonLucyType;
-  typename AdaptivelyAcceleratedRichardsonLucyType::Pointer ediv = AdaptivelyAcceleratedRichardsonLucyType::New();
+  typedef itk::DivideOrZeroOutImageFilter< InternalImageType > DivideType;
+  typename DivideType::Pointer ediv = DivideType::New();
   ediv->SetInput( 1, input );
   ediv->SetInput( 0, ifft->GetOutput() );
   ediv->SetNumberOfThreads( this->GetNumberOfThreads() );

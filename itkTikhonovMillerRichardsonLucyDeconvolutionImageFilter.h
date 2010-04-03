@@ -25,32 +25,6 @@ namespace itk {
 namespace Functor {  
   
 template< class TReal>
-class TikhonovMillerRichardsonLucy
-{
-public:
-  TikhonovMillerRichardsonLucy() {};
-  ~TikhonovMillerRichardsonLucy() {};
-  bool operator!=( const TikhonovMillerRichardsonLucy & other ) const
-    {
-    return !(*this == other);
-    }
-  bool operator==( const TikhonovMillerRichardsonLucy & other ) const
-    {
-    return true;
-    }
-  // arguments are in an unusual order to allow to run in place
-  // of the denominator image
-  inline TReal operator()( const TReal & d, const TReal & n )
-    {
-    if( d < 1e-5 )
-      {
-      return 0;
-      }
-    return n / d;
-    }
-};
-
-template< class TReal>
 class TikhonovMillerRegularization
 {
 public:

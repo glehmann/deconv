@@ -24,6 +24,7 @@
 #include "itkSubtractImageFilter.h"
 #include "itkMultiplyByComplexConjugateImageFilter.h"
 #include "itkRelativeChangeCalculator.h"
+#include "itkDivideOrZeroOutImageFilter.h"
 
 namespace itk {
 
@@ -73,12 +74,8 @@ RichardsonLucyDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutpu
   // input convolution completed
   
   // divide the input by (the convolved image + epsilon)
-  typedef itk::BinaryFunctorImageFilter< InternalImageType,
-                InternalImageType,
-                InternalImageType,
-                typename Functor::RichardsonLucy< TInternalPrecision > >
-                  RichardsonLucyType;
-  typename RichardsonLucyType::Pointer ediv = RichardsonLucyType::New();
+  typedef itk::DivideOrZeroOutImageFilter< InternalImageType > DivideType;
+  typename DivideType::Pointer ediv = DivideType::New();
   ediv->SetInput( 1, input );
   ediv->SetInput( 0, ifft->GetOutput() );
   ediv->SetNumberOfThreads( this->GetNumberOfThreads() );
