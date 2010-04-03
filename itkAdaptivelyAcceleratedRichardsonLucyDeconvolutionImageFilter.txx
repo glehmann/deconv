@@ -188,7 +188,7 @@ AdaptivelyAcceleratedRichardsonLucyDeconvolutionImageFilter<TInputImage, TPointS
     // update the acceleration parameter
     if( this->GetIteration() < 3 )
       {
-      rmult->GetFunctor().m_Q = 1;
+      rmult->GetFunctor().m_Q = 2;
       }
     else
       {
@@ -253,6 +253,7 @@ AdaptivelyAcceleratedRichardsonLucyDeconvolutionImageFilter<TInputImage, TPointS
   
   typename InternalImageType::SpacingType spacing = input->GetSpacing();
 
+//  for( int i=0; i<1; i++ )
   for( int i=0; i<ImageDimension; i++ )
     {
     op.SetDirection( i );
