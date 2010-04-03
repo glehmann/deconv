@@ -94,12 +94,6 @@ VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputIma
   // don't run in place - we need to keep the input image
   // sub->SetInPlace( true );
 
-  if( this->GetRegularizationFilter() != NULL )
-    {
-    // connect the regularization filter
-    this->GetRegularizationFilter()->SetInput( sub->GetOutput() );
-    }
-  
   typedef itk::BinaryFunctorImageFilter< InternalImageType,
                 InternalImageType,
                 InternalImageType,
@@ -107,14 +101,7 @@ VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputIma
                   VanCittertType;
   typename VanCittertType::Pointer add = VanCittertType::New();
   add->SetInput( 1, input );
-  if( this->GetRegularizationFilter() == NULL )
-    {
-    add->SetInput( 0, sub->GetOutput() );
-    }
-  else
-    {
-    add->SetInput( 0, this->GetRegularizationFilter()->GetOutput() );
-    }
+  add->SetInput( 0, sub->GetOutput() );
   this->InitFunctor( add->GetFunctor() );
   add->SetNumberOfThreads( this->GetNumberOfThreads() );
   add->SetReleaseDataFlag( true );

@@ -92,22 +92,9 @@ LandweberDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImag
   // don't run in place - we need to keep the input image
   // sub->SetInPlace( true );
 
-  if( this->GetRegularizationFilter() != NULL )
-    {
-    // connect the regularization filter
-    this->GetRegularizationFilter()->SetInput( sub->GetOutput() );
-    }
-
   // convolve the residual with the transposed psf
   typename FFTFilterType::Pointer fft2 = FFTFilterType::New();
-  if( this->GetRegularizationFilter() == NULL )
-    {
-    fft2->SetInput( 0, sub->GetOutput() );
-    }
-  else
-    {
-    fft2->SetInput( 0, this->GetRegularizationFilter()->GetOutput() );
-    }
+  fft2->SetInput( 0, sub->GetOutput() );
   fft2->SetNumberOfThreads( this->GetNumberOfThreads() );
   fft2->SetReleaseDataFlag( true );
   // progress->RegisterInternalFilter( fft, 0.25f );

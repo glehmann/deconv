@@ -31,7 +31,6 @@ IterativeDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImag
   m_Iteration = 0;
   m_RelativeChange = 0;
   m_SmoothingPeriod = 1;
-  m_RegularizationFilter = NULL;
 }
 
 template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>
@@ -55,15 +54,6 @@ IterativeDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImag
   else
     {
     m_SmoothingFilter->Print( os, indent.GetNextIndent() );
-    }
-  os << indent << "RegularizationFilter: ";
-  if( m_RegularizationFilter.IsNull() )
-    {
-    std::cout << "NULL" << std::endl;
-    }
-  else
-    {
-    m_RegularizationFilter->Print( os, indent.GetNextIndent() );
     }
 }
 

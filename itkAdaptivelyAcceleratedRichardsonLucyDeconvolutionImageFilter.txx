@@ -82,36 +82,6 @@ AdaptivelyAcceleratedRichardsonLucyDeconvolutionImageFilter<TInputImage, TPointS
 
   // input convolution completed
   
-  // do we have to do some work on the residual?
-  typedef itk::SubtractImageFilter< InternalImageType,
-                InternalImageType,
-                InternalImageType > SubtractType;
-  typename SubtractType::Pointer sub;
-  typedef itk::AddImageFilter< InternalImageType,
-                InternalImageType,
-                InternalImageType > AddType;
-  typename AddType::Pointer add;
-  if( this->GetRegularizationFilter() != NULL )
-    {
-    // yes, we do, so we have to compute it
-    sub = SubtractType::New();
-    sub->SetInput( 0, input );
-    sub->SetInput( 1, ifft->GetOutput() );
-    sub->SetNumberOfThreads( this->GetNumberOfThreads() );
-    sub->SetReleaseDataFlag( true );
-    // don't run in place - we need to keep the input image
-    // sub->SetInPlace( true );
-    // connect the regularization filter
-    this->GetRegularizationFilter()->SetInput( sub->GetOutput() );
-    // and recompute I at iteration n
-    add = AddType::New();
-    add->SetInput( 0, input );
-    add->SetInput( 1, this->GetRegularizationFilter()->GetOutput() );
-    add->SetNumberOfThreads( this->GetNumberOfThreads() );
-    add->SetReleaseDataFlag( true );
-    add->SetInPlace( true );
-    }
-  
   // divide the input by (the convolved image + epsilon)
   typedef itk::BinaryFunctorImageFilter< InternalImageType,
                 InternalImageType,
@@ -120,14 +90,7 @@ AdaptivelyAcceleratedRichardsonLucyDeconvolutionImageFilter<TInputImage, TPointS
                   AdaptivelyAcceleratedRichardsonLucyType;
   typename AdaptivelyAcceleratedRichardsonLucyType::Pointer ediv = AdaptivelyAcceleratedRichardsonLucyType::New();
   ediv->SetInput( 1, input );
-  if( this->GetRegularizationFilter() == NULL )
-    {
-    ediv->SetInput( 0, ifft->GetOutput() );
-    }
-  else
-    {
-    ediv->SetInput( 0, add->GetOutput() );
-    }
+  ediv->SetInput( 0, ifft->GetOutput() );
   ediv->SetNumberOfThreads( this->GetNumberOfThreads() );
   ediv->SetReleaseDataFlag( true );
   ediv->SetInPlace( true );

@@ -115,15 +115,6 @@ public:
   itkGetConstMacro(SmoothingPeriod, int);
   itkSetMacro(SmoothingPeriod, int);
 
-  /**
-   * Set/Get the regularization filter which is applied during each iteration on
-   * the residual image. This filter should keep only the noise in the image.
-   * Default is NULL (no regularization).
-   */
-  itkGetConstObjectMacro(RegularizationFilter, InternalFilterType);
-  itkGetObjectMacro(RegularizationFilter, InternalFilterType);
-  itkSetObjectMacro(RegularizationFilter, InternalFilterType);
-
   itkGetConstMacro(Iteration, int);
   itkGetConstMacro(RelativeChange, double);
 
@@ -156,7 +147,6 @@ private:
   int                                        m_Iteration;
   double                                     m_RelativeChange;
   int                                        m_SmoothingPeriod;
-  typename InternalFilterType::Pointer       m_RegularizationFilter;
 
 }; // end of class
 
