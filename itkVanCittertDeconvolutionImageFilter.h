@@ -61,7 +61,7 @@ public:
  *
  * \sa FFTShiftImageFilter NormalizeToConstantImageFilter FFTRealToComplexConjugateImageFilter
  */
-template<class TInputImage, class TPointSpreadFunction=TInputImage, class TOutputImage=TInputImage, class TInternalPrecision=float, class TFunctor=Functor::VanCittert<TInternalPrecision> >
+template<class TInputImage, class TPointSpreadFunction=TInputImage, class TOutputImage=TInputImage, class TInternalPrecision=float >
 class ITK_EXPORT VanCittertDeconvolutionImageFilter : 
     public IterativeDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision> 
 {
@@ -76,10 +76,9 @@ public:
 
   /** Some convenient typedefs. */
   typedef TInputImage                              InputImageType;
-  typedef TPointSpreadFunction                     PointSpreadFunctionType;
+  typedef TPointSpreadFunction                             PointSpreadFunctionType;
   typedef TOutputImage                             OutputImageType;
-  typedef TInternalPrecision                       InternalPrecisionType;
-  typedef TFunctor                                 FunctorType;
+  typedef TInternalPrecision                            InternalPrecisionType;
   typedef typename InputImageType::Pointer         InputImagePointer;
   typedef typename InputImageType::ConstPointer    InputImageConstPointer;
   typedef typename InputImageType::PixelType       InputImagePixelType;
@@ -111,7 +110,6 @@ public:
                       TOutputImage::ImageDimension);
   itkStaticConstMacro(ImageDimension, unsigned int,
                       TOutputImage::ImageDimension);
-
   
   /** Standard New method. */
   itkNewMacro(Self);  
@@ -146,13 +144,16 @@ protected:
   VanCittertDeconvolutionImageFilter();
   ~VanCittertDeconvolutionImageFilter() {};
 
-  /** Single-threaded version of GenerateData.  This filter delegates
-   * to other filters. */
-  void GenerateData();
+  virtual void Init();
+  virtual void SetEstimate( InternalImageType * estimate );
+  virtual typename InternalImageType::Pointer NewEstimate();
+  virtual void End();
+
+  typename InternalFilterType::Pointer m_Convolution;
+  typename InternalFilterType::Pointer m_Subtract;
+  typename InternalFilterType::Pointer m_Add;
   
   void PrintSelf(std::ostream& os, Indent indent) const;
-
-  virtual void InitFunctor( FunctorType & functor );
 
 private:
   VanCittertDeconvolutionImageFilter(const Self&); //purposely not implemented

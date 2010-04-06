@@ -25,17 +25,32 @@ namespace itk {
 template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>
 void
 JanssonVanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>
-::InitFunctor( FunctorType & functor )
+::Init()
 {
-  Superclass::InitFunctor( functor );
+  Superclass::Init();
   
   typedef itk::MinimumMaximumImageCalculator< TInputImage > CalculatorType;
   typename CalculatorType::Pointer calc = CalculatorType::New();
   calc->SetImage( this->GetInput() );
   calc->Compute();
 
-  functor.m_A = (TInternalPrecision) calc->GetMaximum() / 2.0;
+  typedef itk::BinaryFunctorImageFilter< InternalImageType,
+                InternalImageType,
+                InternalImageType,
+                Functor::JanssonVanCittert<TInternalPrecision> >
+                  VanCittertType;
+  typename VanCittertType::Pointer add = VanCittertType::New();
+  add->SetInput( 1, this->m_Add->GetInput( 1 ) );
+  add->SetInput( 0, this->m_Add->GetInput( 0 ) );
+  add->GetFunctor().m_Alpha = this->GetAlpha();
+  add->GetFunctor().m_NonNegativity = this->GetNonNegativity();
+  add->GetFunctor().m_A = (TInternalPrecision) calc->GetMaximum() / 2.0;
   // std::cout << "functor.m_A: " << functor.m_A << std::endl;
+  add->SetNumberOfThreads( this->GetNumberOfThreads() );
+  add->SetReleaseDataFlag( true );
+  add->SetInPlace( true );
+  
+  this->m_Add = add;
 }
 
 

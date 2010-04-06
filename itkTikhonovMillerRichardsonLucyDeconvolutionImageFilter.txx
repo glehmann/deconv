@@ -39,80 +39,9 @@ TikhonovMillerRichardsonLucyDeconvolutionImageFilter<TInputImage, TPointSpreadFu
 template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>
 void
 TikhonovMillerRichardsonLucyDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>
-::GenerateData()
+::Init()
 {
-  // members used to monitor the iterations
-  this->SetIteration( 0 );
-  this->SetRelativeChange( 0.0 );
-  
-  InternalImagePointerType input;
-  ComplexImagePointerType psf;
-  bool xIsOdd;
-  
-  this->Init( input, psf, xIsOdd, 0 );
-
-  // iterated code from here
-  
-  // first convolve the input image by the psf
-  
-  typename FFTFilterType::Pointer fft = FFTFilterType::New();
-  fft->SetInput( input );
-  fft->SetNumberOfThreads( this->GetNumberOfThreads() );
-  fft->SetReleaseDataFlag( true );
-
-  typedef typename FFTFilterType::OutputImagePixelType ComplexType;
-  
-  typedef itk::MultiplyImageFilter< ComplexImageType,
-                ComplexImageType,
-                ComplexImageType > MultType;
-  typename MultType::Pointer mult = MultType::New();
-  mult->SetInput( 0, fft->GetOutput() );
-  mult->SetInput( 1, psf );
-  mult->SetNumberOfThreads( this->GetNumberOfThreads() );
-  mult->SetReleaseDataFlag( true );
-  mult->SetInPlace( true );
-  
-  typedef itk::FFTComplexConjugateToRealImageFilter< InternalPrecisionType, ImageDimension > IFFTFilterType;
-  typename IFFTFilterType::Pointer ifft = IFFTFilterType::New();
-  ifft->SetInput( mult->GetOutput() );
-  ifft->SetActualXDimensionIsOdd( xIsOdd );
-  ifft->SetNumberOfThreads( this->GetNumberOfThreads() );
-  ifft->SetReleaseDataFlag( true );
-
-  // input convolution completed
-  
-  // divide the input by (the convolved image + epsilon)
-  typedef itk::DivideOrZeroOutImageFilter< InternalImageType > DivideType;
-  typename DivideType::Pointer ediv = DivideType::New();
-  ediv->SetInput( 1, input );
-  ediv->SetInput( 0, ifft->GetOutput() );
-  ediv->SetNumberOfThreads( this->GetNumberOfThreads() );
-  ediv->SetReleaseDataFlag( true );
-  ediv->SetInPlace( true );
-  
-  // convolve the divided image by the psf
-  
-  typename FFTFilterType::Pointer fft2 = FFTFilterType::New();
-  fft2->SetInput( ediv->GetOutput() );
-  fft2->SetNumberOfThreads( this->GetNumberOfThreads() );
-  fft2->SetReleaseDataFlag( true );
-  // progress->RegisterInternalFilter( fft, 0.25f );
-
-  typedef itk::MultiplyByComplexConjugateImageFilter< ComplexImageType > MultiplyByComplexConjugateType;
-  typename MultiplyByComplexConjugateType::Pointer cmult = MultiplyByComplexConjugateType::New();
-  cmult->SetInput( 0, fft2->GetOutput() );
-  cmult->SetInput( 1, psf );
-  cmult->SetNumberOfThreads( this->GetNumberOfThreads() );
-  cmult->SetReleaseDataFlag( true );
-  cmult->SetInPlace( true );
-  
-  typename IFFTFilterType::Pointer ifft2 = IFFTFilterType::New();
-  ifft2->SetInput( cmult->GetOutput() );
-  ifft2->SetActualXDimensionIsOdd( xIsOdd );
-  ifft2->SetNumberOfThreads( this->GetNumberOfThreads() );
-  ifft2->SetReleaseDataFlag( true );
-  
-  // divided image convolution completed
+  Superclass::Init();
   
   // TODO: check the execution speed to see if it can be done faster in the
   // frequency domain -- we already have the input image, so we only have to precompute
@@ -120,10 +49,11 @@ TikhonovMillerRichardsonLucyDeconvolutionImageFilter<TInputImage, TPointSpreadFu
   // and the ifft at each iteration.
   typedef LaplacianImageFilter< InternalImageType, InternalImageType > LaplacianType;
   typename LaplacianType::Pointer laplacian = LaplacianType::New();
-  laplacian->SetInput( input );
+  laplacian->SetInput( this->m_Convolution->GetInput() );  // take the estimate from another filter
   laplacian->SetNormalizeToOne( true );
   laplacian->SetNumberOfThreads( this->GetNumberOfThreads() );
   laplacian->SetReleaseDataFlag( true );
+  this->m_Laplacian = laplacian;
   
   // multiply the result with the input
   typedef itk::TernaryFunctorImageFilter< InternalImageType,
@@ -131,59 +61,38 @@ TikhonovMillerRichardsonLucyDeconvolutionImageFilter<TInputImage, TPointSpreadFu
                 InternalImageType,
                 InternalImageType,
                 typename Functor::TikhonovMillerRegularization< TInternalPrecision > > RealMultType;
-  typename RealMultType::Pointer rmult = RealMultType::New();
-  rmult->SetInput( 0, ifft2->GetOutput() );
-  rmult->SetInput( 1, input );
-  rmult->SetInput( 2, laplacian->GetOutput() );
-  rmult->GetFunctor().m_Lambda = m_Lambda;
-  rmult->SetNumberOfThreads( this->GetNumberOfThreads() );
+  typename RealMultType::Pointer mult = RealMultType::New();
+  mult->SetInput( 0, this->m_Multiplication->GetInput( 0 ) );
+  mult->SetInput( 1, this->m_Multiplication->GetInput( 1 ) );
+  mult->SetInput( 2, laplacian->GetOutput() );
+  mult->GetFunctor().m_Lambda = m_Lambda;
+  mult->SetNumberOfThreads( this->GetNumberOfThreads() );
   // can't be released, it is required by two filters on next iteration
-  // rmult->SetReleaseDataFlag( true );
-  rmult->SetInPlace( true );
-  
-  // begin the iterations
-  typedef typename itk::RelativeChangeCalculator< InternalImageType > ChangeType;
-  typename ChangeType::Pointer change = ChangeType::New();
-  typename InternalImageType::Pointer img = input;
-  for( int i=1; i<=this->GetNumberOfIterations(); i++ )
+  // mult->SetReleaseDataFlag( true );
+  mult->SetInPlace( true );
+  this->m_Multiplication = mult;
+}
+
+template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>
+void
+TikhonovMillerRichardsonLucyDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>
+::SetEstimate( InternalImageType * estimate )
+{
+  Superclass::SetEstimate( estimate );
+  // make sure that we are not trying to set the input of an uninitialized filter
+  if( m_Laplacian.IsNotNull() )
     {
-    this->SetIteration( i );
-    // should we use smoothing filter? -- tested in the iteration on purpose, to be able to
-    // change the filter by looking at the iteration event
-    typename InternalFilterType::Pointer last = rmult.GetPointer();
-    if( this->GetSmoothingFilter() != NULL && i % this->GetSmoothingPeriod() == 0 )
-      {
-      this->GetSmoothingFilter()->SetInput( rmult->GetOutput() );
-      last = this->GetSmoothingFilter();
-      }
-    last->Update();
-    
-    // do we have to stop the iterations based on the relative change?
-    change->SetImage( img );
-    change->SetNewImage( last->GetOutput() );
-    change->Compute();
-    // std::cout << change->GetOutput() << std::endl;
-    this->SetRelativeChange( change->GetOutput() );
-    if( this->GetRelativeChangeThreshold() > 0 && this->GetRelativeChange() < this->GetRelativeChangeThreshold() )
-      {
-      break;
-      }
-    else
-      {
-      // ok, lets go for another round
-      img = last->GetOutput();
-      img->DisconnectPipeline();
-      fft->SetInput( img );
-      rmult->SetInput( 1, img );
-      laplacian->SetInput( img );
-      this->UpdateProgress( i/(float)this->GetNumberOfIterations() );
-      this->InvokeEvent( IterationEvent() );
-      }
+    m_Laplacian->SetInput( estimate );
     }
-  img->SetReleaseDataFlag( true );
-  this->UpdateProgress( 1.0 );
-   
-  this->End( img, 0 );
+}
+
+template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>
+void
+TikhonovMillerRichardsonLucyDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>
+::End()
+{
+  Superclass::End();
+  m_Laplacian = NULL;
 }
 
 template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>

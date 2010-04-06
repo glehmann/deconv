@@ -36,168 +36,63 @@ namespace itk {
 template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>
 void
 AdaptivelyAcceleratedRichardsonLucyDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>
-::GenerateData()
+::Init()
 {
-  double m_V1 = 1;
-  double m_V2 = 1;
-  double m_Vk_1 = 1;
-  double m_Vk = 1;
-
-  // members used to monitor the iterations
-  this->SetIteration( 0 );
-  this->SetRelativeChange( 0.0 );
+  // build the pipeline from the superclass
+  Superclass::Init();
   
-  InternalImagePointerType input;
-  ComplexImagePointerType psf;
-  bool xIsOdd;
-  
-  this->Init( input, psf, xIsOdd, 0 );
-
-  // iterated code from here
-  
-  // first convolve the input image by the psf
-  
-  typename FFTFilterType::Pointer fft = FFTFilterType::New();
-  fft->SetInput( input );
-  fft->SetNumberOfThreads( this->GetNumberOfThreads() );
-  fft->SetReleaseDataFlag( true );
-
-  typedef typename FFTFilterType::OutputImagePixelType ComplexType;
-  
-  typedef itk::MultiplyImageFilter< ComplexImageType,
-                ComplexImageType,
-                ComplexImageType > MultType;
+  // change the multiplication filter by a new one
   typename MultType::Pointer mult = MultType::New();
-  mult->SetInput( 0, fft->GetOutput() );
-  mult->SetInput( 1, psf );
+  mult->SetInput( 0, this->m_Multiplication->GetInput( 0 ) );
+  mult->SetInput( 1, this->m_Multiplication->GetInput( 1 ) );
   mult->SetNumberOfThreads( this->GetNumberOfThreads() );
-  mult->SetReleaseDataFlag( true );
-  mult->SetInPlace( true );
-  
-  typedef itk::FFTComplexConjugateToRealImageFilter< InternalPrecisionType, ImageDimension > IFFTFilterType;
-  typename IFFTFilterType::Pointer ifft = IFFTFilterType::New();
-  ifft->SetInput( mult->GetOutput() );
-  ifft->SetActualXDimensionIsOdd( xIsOdd );
-  ifft->SetNumberOfThreads( this->GetNumberOfThreads() );
-  ifft->SetReleaseDataFlag( true );
-
-  // input convolution completed
-  
-  // divide the input by (the convolved image + epsilon)
-  typedef itk::DivideOrZeroOutImageFilter< InternalImageType > DivideType;
-  typename DivideType::Pointer ediv = DivideType::New();
-  ediv->SetInput( 1, input );
-  ediv->SetInput( 0, ifft->GetOutput() );
-  ediv->SetNumberOfThreads( this->GetNumberOfThreads() );
-  ediv->SetReleaseDataFlag( true );
-  ediv->SetInPlace( true );
-  
-  // convolve the divided image by the psf
-  
-  typename FFTFilterType::Pointer fft2 = FFTFilterType::New();
-  fft2->SetInput( ediv->GetOutput() );
-  fft2->SetNumberOfThreads( this->GetNumberOfThreads() );
-  fft2->SetReleaseDataFlag( true );
-  // progress->RegisterInternalFilter( fft, 0.25f );
-
-  typedef itk::MultiplyByComplexConjugateImageFilter< ComplexImageType > MultiplyByComplexConjugateType;
-  typename MultiplyByComplexConjugateType::Pointer cmult = MultiplyByComplexConjugateType::New();
-  cmult->SetInput( 0, fft2->GetOutput() );
-  cmult->SetInput( 1, psf );
-  cmult->SetNumberOfThreads( this->GetNumberOfThreads() );
-  cmult->SetReleaseDataFlag( true );
-  cmult->SetInPlace( true );
-  
-  typename IFFTFilterType::Pointer ifft2 = IFFTFilterType::New();
-  ifft2->SetInput( cmult->GetOutput() );
-  ifft2->SetActualXDimensionIsOdd( xIsOdd );
-  ifft2->SetNumberOfThreads( this->GetNumberOfThreads() );
-  ifft2->SetReleaseDataFlag( true );
-  
-  // divided image convolution completed
-  // multiply the result with the input
-  
-  typedef itk::BinaryFunctorImageFilter< InternalImageType,
-                InternalImageType,
-                InternalImageType,
-                typename Functor::AdaptivelyAcceleratedRichardsonLucy2< TInternalPrecision > > RealMultType;
-  typename RealMultType::Pointer rmult = RealMultType::New();
-  rmult->SetInput( 0, ifft2->GetOutput() );
-  rmult->SetInput( 1, input );
-  rmult->SetNumberOfThreads( this->GetNumberOfThreads() );
   // can't be released, it is required by two filters on next iteration
-  // rmult->SetReleaseDataFlag( true );
-  rmult->SetInPlace( true );
+  // mult->SetReleaseDataFlag( true );
+  mult->SetInPlace( true );
+  this->m_Multiplication = mult;
   
-  // begin the iterations
-  typedef typename itk::RelativeChangeCalculator< InternalImageType > ChangeType;
-  typename ChangeType::Pointer change = ChangeType::New();
-  typename InternalImageType::Pointer img = input;
-  for( int i=1; i<=this->GetNumberOfIterations(); i++ )
+  // and initialize the variables needed to compute the acceleration parameter
+  m_V1 = 1.0;
+  m_V2 = 1.0;
+  m_Vk_1 = 1.0;
+  m_Vk = 1.0;
+  
+  // that's it!
+}
+
+template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>
+void
+AdaptivelyAcceleratedRichardsonLucyDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>
+::BeforeIteration()
+{
+  Superclass::BeforeIteration();
+
+  // compute the L2 norm of the derivative and store it so it can be reused later
+  double v = ComputeL2NormOfFirstOrderDerivative( this->GetEstimate() );
+  if( this->GetIteration() == 1 )
     {
-    this->SetIteration( i );
-    // should we use smoothing filter? -- tested in the iteration on purpose, to be able to
-    // change the filter by looking at the iteration event
-    typename InternalFilterType::Pointer last = rmult.GetPointer();
-    if( this->GetSmoothingFilter() != NULL && i % this->GetSmoothingPeriod() == 0 )
-      {
-      this->GetSmoothingFilter()->SetInput( rmult->GetOutput() );
-      last = this->GetSmoothingFilter();
-      }
-    
-    // update the acceleration parameter
-    if( this->GetIteration() < 3 )
-      {
-      rmult->GetFunctor().m_Q = 2;
-      }
-    else
-      {
-      rmult->GetFunctor().m_Q = vcl_exp( m_Vk / m_Vk_1 ) - m_V2 / m_V1;
-      }
-    // std::cout << "Q: " << rmult->GetFunctor().m_Q << std::endl;
-
-    last->Update();
-    
-    // do we have to stop the iterations based on the relative change?
-    change->SetImage( img );
-    change->SetNewImage( last->GetOutput() );
-    change->Compute();
-    // std::cout << change->GetOutput() << std::endl;
-    this->SetRelativeChange( change->GetOutput() );
-    if( this->GetRelativeChangeThreshold() > 0 && this->GetRelativeChange() < this->GetRelativeChangeThreshold() )
-      {
-      break;
-      }
-    else
-      {
-      // ok, lets go for another round
-      img = last->GetOutput();
-      img->DisconnectPipeline();
-      fft->SetInput( img );
-      rmult->SetInput( 1, img );
-
-      // compute the L2 norm of the derivative and store it so it can be reused later
-      double v = ComputeL2NormOfFirstOrderDerivative( img );
-      if( i == 1 )
-        {
-        m_V1 = v;
-        }
-      else if( i == 2 )
-        {
-        m_V2 = v;
-        }
-      m_Vk_1 = m_Vk;
-      m_Vk = v;
-      // std::cout << "v: " << v << std::endl;
-    
-      this->UpdateProgress( i/(float)this->GetNumberOfIterations() );
-      this->InvokeEvent( IterationEvent() );
-      }
+    m_V1 = v;
     }
-  img->SetReleaseDataFlag( true );
-  this->UpdateProgress( 1.0 );
-   
-  this->End( img, 0 );
+  else if( this->GetIteration() == 2 )
+    {
+    m_V2 = v;
+    }
+  m_Vk_1 = m_Vk;
+  m_Vk = v;
+  // std::cout << "Vk: " << m_Vk << "  Vk-1: " << m_Vk_1 << "  V1: " << m_V1 << "  V2: " << m_V2 << std::endl;
+
+  // and update the acceleration parameter
+  MultType * mult = dynamic_cast<MultType *>(this->m_Multiplication.GetPointer());
+  if( this->GetIteration() < 3 )
+    {
+    mult->GetFunctor().m_Q = 2;
+    }
+  else
+    {
+    mult->GetFunctor().m_Q = vcl_exp( m_Vk / m_Vk_1 ) - m_V2 / m_V1;
+    // mult->GetFunctor().m_Q = std::max( vcl_exp( ( m_Vk / m_Vk_1 - 1.0 ) / ( m_V2 / m_V1 - 1.0 ) ), 1.0 );
+    }
+  // std::cout << "Iteration: " << this->GetIteration() << "  Q: " << mult->GetFunctor().m_Q << std::endl;
 }
 
 

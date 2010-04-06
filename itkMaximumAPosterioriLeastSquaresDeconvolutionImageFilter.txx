@@ -39,9 +39,8 @@ MaximumAPosterioriLeastSquaresDeconvolutionImageFilter<TInputImage, TPointSpread
   InternalImagePointerType input;
   // ComplexImagePointerType input;
   ComplexImagePointerType psf;
-  bool xIsOdd;
   
-  this->Init( input, psf, xIsOdd, 0.4f );
+  this->Init( input, psf, 0.4f );
   
   typename FFTFilterType::Pointer fft = FFTFilterType::New();
   fft->SetInput( input );
@@ -66,7 +65,7 @@ MaximumAPosterioriLeastSquaresDeconvolutionImageFilter<TInputImage, TPointSpread
   mult->SetInPlace( true );
   this->RegisterInternalFilter( mult, 0.1f );
   
-  this->End( mult->GetOutput(), xIsOdd, 0.3f );
+  this->End( mult->GetOutput(), 0.3f );
 }
 
 template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>

@@ -17,7 +17,7 @@
 #ifndef __itkMaximumEntropyRichardsonLucyDeconvolutionImageFilter_h
 #define __itkMaximumEntropyRichardsonLucyDeconvolutionImageFilter_h
 
-#include "itkIterativeDeconvolutionImageFilter.h"
+#include "itkRichardsonLucyDeconvolutionImageFilter.h"
 #include "itkConceptChecking.h"
 
 namespace itk {
@@ -65,13 +65,13 @@ public:
  */
 template<class TInputImage, class TPointSpreadFunction=TInputImage, class TOutputImage=TInputImage, class TInternalPrecision=float>
 class ITK_EXPORT MaximumEntropyRichardsonLucyDeconvolutionImageFilter : 
-    public IterativeDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision> 
+    public RichardsonLucyDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision> 
 {
 public:
   /** Standard class typedefs. */
   typedef MaximumEntropyRichardsonLucyDeconvolutionImageFilter Self;
 
-  typedef IterativeDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>  Superclass;
+  typedef RichardsonLucyDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>  Superclass;
 
   typedef SmartPointer<Self>        Pointer;
   typedef SmartPointer<const Self>  ConstPointer;
@@ -117,7 +117,7 @@ public:
   itkNewMacro(Self);  
 
   /** Runtime information support. */
-  itkTypeMacro(MaximumEntropyRichardsonLucyDeconvolutionImageFilter, IterativeDeconvolutionImageFilter);
+  itkTypeMacro(MaximumEntropyRichardsonLucyDeconvolutionImageFilter, RichardsonLucyDeconvolutionImageFilter);
 
   itkGetConstMacro(Lambda, InternalPrecisionType);
   itkSetMacro(Lambda, InternalPrecisionType);
@@ -138,7 +138,7 @@ protected:
 
   /** Single-threaded version of GenerateData.  This filter delegates
    * to other filters. */
-  void GenerateData();
+  void Init();
 
   void PrintSelf(std::ostream& os, Indent indent) const;
 

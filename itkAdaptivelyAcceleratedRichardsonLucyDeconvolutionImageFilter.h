@@ -17,7 +17,7 @@
 #ifndef __itkAdaptivelyAcceleratedRichardsonLucyDeconvolutionImageFilter_h
 #define __itkAdaptivelyAcceleratedRichardsonLucyDeconvolutionImageFilter_h
 
-#include "itkIterativeDeconvolutionImageFilter.h"
+#include "itkRichardsonLucyDeconvolutionImageFilter.h"
 #include "itkConceptChecking.h"
 
 namespace itk {
@@ -25,19 +25,19 @@ namespace itk {
 namespace Functor {  
 
 template< class TReal>
-class AdaptivelyAcceleratedRichardsonLucy2
+class AdaptivelyAcceleratedRichardsonLucy
 {
 public:
-  AdaptivelyAcceleratedRichardsonLucy2()
+  AdaptivelyAcceleratedRichardsonLucy()
     {
     m_Q = 1;
     };
-  ~AdaptivelyAcceleratedRichardsonLucy2() {};
-  bool operator!=( const AdaptivelyAcceleratedRichardsonLucy2 & other ) const
+  ~AdaptivelyAcceleratedRichardsonLucy() {};
+  bool operator!=( const AdaptivelyAcceleratedRichardsonLucy & other ) const
     {
     return !(*this == other);
     }
-  bool operator==( const AdaptivelyAcceleratedRichardsonLucy2 & other ) const
+  bool operator==( const AdaptivelyAcceleratedRichardsonLucy & other ) const
     {
     return true;
     }
@@ -54,7 +54,8 @@ public:
 //       std::cout << "v: " << v << "  m_Q: " << m_Q << std::endl;
     assert( !std::isnan( vcl_pow( v, m_Q ) ) );
     assert( !std::isnan( i * vcl_pow( v, m_Q ) ) );
-    return i * vcl_pow( v, m_Q );
+    return std::max( i * vcl_pow( v, m_Q ),
+                     NumericTraits< TReal >::Zero );
     }
   TReal m_Q;
 };
@@ -71,13 +72,13 @@ public:
  */
 template<class TInputImage, class TPointSpreadFunction=TInputImage, class TOutputImage=TInputImage, class TInternalPrecision=float>
 class ITK_EXPORT AdaptivelyAcceleratedRichardsonLucyDeconvolutionImageFilter : 
-    public IterativeDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision> 
+    public RichardsonLucyDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision> 
 {
 public:
   /** Standard class typedefs. */
   typedef AdaptivelyAcceleratedRichardsonLucyDeconvolutionImageFilter Self;
 
-  typedef IterativeDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>  Superclass;
+  typedef RichardsonLucyDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>  Superclass;
 
   typedef SmartPointer<Self>        Pointer;
   typedef SmartPointer<const Self>  ConstPointer;
@@ -123,7 +124,7 @@ public:
   itkNewMacro(Self);  
 
   /** Runtime information support. */
-  itkTypeMacro(AdaptivelyAcceleratedRichardsonLucyDeconvolutionImageFilter, IterativeDeconvolutionImageFilter);
+  itkTypeMacro(AdaptivelyAcceleratedRichardsonLucyDeconvolutionImageFilter, RichardsonLucyDeconvolutionImageFilter);
 
 #ifdef ITK_USE_CONCEPT_CHECKING
   /** Begin concept checking */
@@ -139,15 +140,23 @@ protected:
   AdaptivelyAcceleratedRichardsonLucyDeconvolutionImageFilter() {};
   ~AdaptivelyAcceleratedRichardsonLucyDeconvolutionImageFilter() {};
 
-  /** Single-threaded version of GenerateData.  This filter delegates
-   * to other filters. */
-  void GenerateData();
+  virtual void Init();
+  virtual void BeforeIteration();
 
   double ComputeL2NormOfFirstOrderDerivative( const InternalImageType * img );
   
+  typedef itk::BinaryFunctorImageFilter< InternalImageType,
+                InternalImageType,
+                InternalImageType,
+                typename Functor::AdaptivelyAcceleratedRichardsonLucy< TInternalPrecision > > MultType;
+
 private:
   AdaptivelyAcceleratedRichardsonLucyDeconvolutionImageFilter(const Self&); //purposely not implemented
   void operator=(const Self&); //purposely not implemented
+  double m_V1;
+  double m_V2;
+  double m_Vk_1;
+  double m_Vk;
   
 }; // end of class
 

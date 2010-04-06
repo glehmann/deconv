@@ -19,6 +19,7 @@
 
 #include "itkFFTConvolutionImageFilterBase.h"
 #include "itkConceptChecking.h"
+#include "itkRelativeChangeCalculator.h"
 
 namespace itk {
 
@@ -67,7 +68,8 @@ public:
 
   typedef typename Superclass::InternalImageType                                   InternalImageType;
   typedef typename itk::ImageToImageFilter< InternalImageType, InternalImageType > InternalFilterType;
-  
+  typedef RelativeChangeCalculator< InternalImageType >                            ChangeType;
+
   /** ImageDimension constants */
   itkStaticConstMacro(InputImageDimension, unsigned int,
                       TInputImage::ImageDimension);
@@ -117,6 +119,7 @@ public:
 
   itkGetConstMacro(Iteration, int);
   itkGetConstMacro(RelativeChange, double);
+  itkGetConstObjectMacro(Estimate, InternalImageType);
 
 #ifdef ITK_USE_CONCEPT_CHECKING
   /** Begin concept checking */
@@ -133,9 +136,23 @@ protected:
   ~IterativeDeconvolutionImageFilter() {};
 
   void PrintSelf(std::ostream& os, Indent indent) const;
-
-  itkSetMacro(Iteration, int);
-  itkSetMacro(RelativeChange, double);
+  
+  virtual void GenerateData();
+  virtual void Iterate();
+  
+  virtual void Init();
+  virtual void BeforeIteration() {};
+  virtual void SetEstimate( InternalImageType * estimate )
+    {
+    m_Estimate = estimate;
+    m_RelativeChangeCalculator->SetImage( estimate );
+    }
+  virtual typename InternalImageType::Pointer NewEstimate()
+    {
+    itkExceptionMacro(<< "GetNewEstimate() is not implemeted - please implement it.");
+    }
+  virtual void AfterIteration() {};
+  virtual void End();
 
 private:
   IterativeDeconvolutionImageFilter(const Self&); //purposely not implemented
@@ -147,6 +164,9 @@ private:
   int                                        m_Iteration;
   double                                     m_RelativeChange;
   int                                        m_SmoothingPeriod;
+  // internal only members
+  typename ChangeType::Pointer               m_RelativeChangeCalculator;
+  typename InternalImageType::Pointer        m_Estimate;
 
 }; // end of class
 

@@ -168,9 +168,15 @@ protected:
   PoissonMaximumAPosterioriDeconvolutionImageFilter() {};
   ~PoissonMaximumAPosterioriDeconvolutionImageFilter() {};
 
-  /** Single-threaded version of GenerateData.  This filter delegates
-   * to other filters. */
-  void GenerateData();
+  virtual void Init();
+  virtual void SetEstimate( InternalImageType * estimate );
+  virtual typename InternalImageType::Pointer NewEstimate();
+  virtual void End();
+
+  typename InternalFilterType::Pointer m_Convolution;
+  typename InternalFilterType::Pointer m_Division;
+  typename InternalFilterType::Pointer m_Convolution2;
+  typename InternalFilterType::Pointer m_Multiplication;
 
 private:
   PoissonMaximumAPosterioriDeconvolutionImageFilter(const Self&); //purposely not implemented

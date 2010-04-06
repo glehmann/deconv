@@ -36,9 +36,8 @@ WienerDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, 
 {
   ComplexImagePointerType input;
   ComplexImagePointerType psf;
-  bool xIsOdd;
   
-  this->Init( input, psf, xIsOdd, 0.6f );
+  this->Init( input, psf, 0.6f );
   
   typedef itk::BinaryFunctorImageFilter< ComplexImageType,
                                     ComplexImageType,
@@ -54,7 +53,7 @@ WienerDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, 
   mult->SetInPlace( true );
   this->RegisterInternalFilter( mult, 0.1f );
   
-  this->End( mult->GetOutput(), xIsOdd, 0.3f );
+  this->End( mult->GetOutput(), 0.3f );
 }
 
 template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>

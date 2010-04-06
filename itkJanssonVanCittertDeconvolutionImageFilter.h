@@ -65,13 +65,13 @@ public:
  */
 template<class TInputImage, class TPointSpreadFunction=TInputImage, class TOutputImage=TInputImage, class TInternalPrecision=float>
 class ITK_EXPORT JanssonVanCittertDeconvolutionImageFilter : 
-    public VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision, Functor::JanssonVanCittert<TInternalPrecision> >
+    public VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision >
 {
 public:
   /** Standard class typedefs. */
   typedef JanssonVanCittertDeconvolutionImageFilter Self;
 
-  typedef VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision, Functor::JanssonVanCittert<TInternalPrecision> > Superclass;
+  typedef VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision > Superclass;
 
   typedef SmartPointer<Self>        Pointer;
   typedef SmartPointer<const Self>  ConstPointer;
@@ -93,8 +93,7 @@ public:
   typedef typename InputImageType::RegionType      RegionType;
   typedef typename InputImageType::IndexType       IndexType;
   typedef typename InputImageType::SizeType        SizeType;
-  typedef typename Superclass::FunctorType         FunctorType;
-  
+
   /** ImageDimension constants */
   itkStaticConstMacro(InputImageDimension, unsigned int,
                       TInputImage::ImageDimension);
@@ -126,7 +125,7 @@ protected:
   JanssonVanCittertDeconvolutionImageFilter() {};
   ~JanssonVanCittertDeconvolutionImageFilter() {};
 
-  virtual void InitFunctor( FunctorType & functor );
+  virtual void Init();
 
 private:
   JanssonVanCittertDeconvolutionImageFilter(const Self&); //purposely not implemented

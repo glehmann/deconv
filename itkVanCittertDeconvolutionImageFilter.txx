@@ -22,65 +22,38 @@
 #include "itkMultiplyImageFilter.h"
 #include "itkAddImageFilter.h"
 #include "itkSubtractImageFilter.h"
-#include "itkRelativeChangeCalculator.h"
+#include "itkFFTConvolveByOpticalTransferFunctionImageFilter.h"
 
 namespace itk {
 
-template <class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision, class TFunctor>
-VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision, TFunctor>
+template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>
+VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>
 ::VanCittertDeconvolutionImageFilter()
 {
   m_Alpha = 1;
   m_NonNegativity = true;
 }
 
-template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision, class TFunctor>
+template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>
 void
-VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision, TFunctor>
-::GenerateData()
+VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>
+::Init()
 {
-  // members used to monitor the iterations
-  this->SetIteration( 0 );
-  this->SetRelativeChange( 0.0 );
-  
+  Superclass::Init();
+
   InternalImagePointerType input;
   ComplexImagePointerType psf;
-  bool xIsOdd;
   
-  this->Init( input, psf, xIsOdd, 0 );
+  this->Superclass::Superclass::Init( input, psf, 0 );
 
-  // iterated code from here
-  
   // first convolve the input image by the psf
-  
-  typename FFTFilterType::Pointer fft = FFTFilterType::New();
-  fft->SetInput( input );
-  fft->SetNumberOfThreads( this->GetNumberOfThreads() );
-  fft->SetReleaseDataFlag( true );
-  // progress->RegisterInternalFilter( fft, 0.25f );
-
-  typedef typename FFTFilterType::OutputImagePixelType ComplexType;
-  
-  typedef itk::MultiplyImageFilter< typename FFTFilterType::OutputImageType,
-                typename FFTFilterType::OutputImageType,
-                typename FFTFilterType::OutputImageType > MultType;
-  typename MultType::Pointer mult = MultType::New();
-  mult->SetInput( 0, fft->GetOutput() );
-  mult->SetInput( 1, psf );
-  mult->SetNumberOfThreads( this->GetNumberOfThreads() );
-  mult->SetReleaseDataFlag( true );
-  mult->SetInPlace( true );
-  // progress->RegisterInternalFilter( mult, 0.1f );
-  
-  typedef itk::FFTComplexConjugateToRealImageFilter< InternalPrecisionType, ImageDimension > IFFTFilterType;
-  typename IFFTFilterType::Pointer ifft = IFFTFilterType::New();
-  ifft->SetInput( mult->GetOutput() );
-  ifft->SetActualXDimensionIsOdd( xIsOdd );
-  ifft->SetNumberOfThreads( this->GetNumberOfThreads() );
-  ifft->SetReleaseDataFlag( true );
-  // progress->RegisterInternalFilter( ifft, 0.25f );
-
-  // input convolution completed
+  typedef itk::FFTConvolveByOpticalTransferFunctionImageFilter< InternalPrecisionType, ImageDimension > ConvolutionType;
+  typename ConvolutionType::Pointer conv = ConvolutionType::New();
+  // conv->SetInput( input );
+  conv->SetOpticalTransferFunction( psf );
+  conv->SetNumberOfThreads( this->GetNumberOfThreads() );
+  conv->SetReleaseDataFlag( true );
+  m_Convolution = conv;
   
   // compute the residual
   typedef itk::SubtractImageFilter< InternalImageType,
@@ -88,86 +61,65 @@ VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputIma
                 InternalImageType > SubtractType;
   typename SubtractType::Pointer sub = SubtractType::New();
   sub->SetInput( 0, input );
-  sub->SetInput( 1, ifft->GetOutput() );
+  sub->SetInput( 1, conv->GetOutput() );
   sub->SetNumberOfThreads( this->GetNumberOfThreads() );
   sub->SetReleaseDataFlag( true );
   // don't run in place - we need to keep the input image
   // sub->SetInPlace( true );
+  m_Subtract = sub;
 
   typedef itk::BinaryFunctorImageFilter< InternalImageType,
                 InternalImageType,
                 InternalImageType,
-                FunctorType >
+                Functor::VanCittert<TInternalPrecision> >
                   VanCittertType;
   typename VanCittertType::Pointer add = VanCittertType::New();
-  add->SetInput( 1, input );
+  // add->SetInput( 1, input );
   add->SetInput( 0, sub->GetOutput() );
-  this->InitFunctor( add->GetFunctor() );
+  add->GetFunctor().m_Alpha = m_Alpha;
+  add->GetFunctor().m_NonNegativity = m_NonNegativity;
   add->SetNumberOfThreads( this->GetNumberOfThreads() );
   add->SetReleaseDataFlag( true );
   add->SetInPlace( true );
-  // progress->RegisterInternalFilter( add, 0.1f );
+  m_Add = add;
   
-  // begin the iterations
-  typedef typename itk::RelativeChangeCalculator< InternalImageType > ChangeType;
-  typename ChangeType::Pointer change = ChangeType::New();
-  typename InternalImageType::Pointer img = input;
-  for( int i=1; i<=this->GetNumberOfIterations(); i++ )
-    {
-    this->SetIteration( i );
-    // should we use smoothing filter? -- tested in the iteration on purpose, to be able to
-    // change the filter by looking at the iteration event
-    typename InternalFilterType::Pointer last = add.GetPointer();
-    if( this->GetSmoothingFilter() != NULL && i % this->GetSmoothingPeriod() == 0 )
-      {
-      this->GetSmoothingFilter()->SetInput( add->GetOutput() );
-      last = this->GetSmoothingFilter();
-      }
-    last->Update();
-    
-    // do we have to stop the iterations based on the relative change?
-    change->SetImage( img );
-    change->SetNewImage( last->GetOutput() );
-    change->Compute();
-    // std::cout << change->GetOutput() << std::endl;
-    this->SetRelativeChange( change->GetOutput() );
-    if( this->GetRelativeChangeThreshold() > 0 && this->GetRelativeChange() < this->GetRelativeChangeThreshold() )
-      {
-      break;
-      }
-    else
-      {
-      // ok, lets go for another round
-      img = last->GetOutput();
-      img->DisconnectPipeline();
-      fft->SetInput( img );
-      add->SetInput( 1, img );
-      this->UpdateProgress( i/(float)this->GetNumberOfIterations() );
-      this->InvokeEvent( IterationEvent() );
-      }
-    }
-  img->SetReleaseDataFlag( true );
-  this->UpdateProgress( 1.0 );
-   
-  this->End( img, 0 );
+  SetEstimate( input );
+
 }
 
-
-template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision, class TFunctor>
+template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>
 void
-VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision, TFunctor>
-::InitFunctor( FunctorType & functor )
+VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>
+::SetEstimate( InternalImageType * estimate )
 {
-  functor.m_Alpha = m_Alpha;
-  functor.m_NonNegativity = m_NonNegativity;
-  // std::cout << "functor.m_Alpha: " << functor.m_Alpha << std::endl;
-  // std::cout << "functor.m_NonNegativity: " << functor.m_NonNegativity << std::endl;
+  Superclass::SetEstimate( estimate );
+  m_Convolution->SetInput( estimate );
+  m_Add->SetInput( 1, estimate );
 }
 
+template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>
+typename VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>::InternalImageType::Pointer
+VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>
+::NewEstimate()
+{
+  return m_Add->GetOutput();
+}
 
-template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision, class TFunctor>
+template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>
 void
-VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision, TFunctor>
+VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>
+::End()
+{
+  Superclass::End();
+
+  m_Convolution = NULL;
+  m_Subtract = NULL;
+  m_Add = NULL;
+}
+
+template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>
+void
+VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>
 ::PrintSelf(std::ostream &os, Indent indent) const
 {
   Superclass::PrintSelf(os, indent);

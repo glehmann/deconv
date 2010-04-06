@@ -31,6 +31,81 @@ IterativeDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImag
   m_Iteration = 0;
   m_RelativeChange = 0;
   m_SmoothingPeriod = 1;
+  m_RelativeChangeCalculator = NULL;
+  m_Estimate = NULL;
+}
+
+template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>
+void
+IterativeDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>
+::GenerateData()
+{
+  Init();
+  Iterate();
+  End();
+}
+
+template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>
+void
+IterativeDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>
+::Init()
+{
+  m_RelativeChangeCalculator = ChangeType::New();
+}
+
+template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>
+void
+IterativeDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>
+::Iterate()
+{
+  for( m_Iteration=1; m_Iteration<=this->GetNumberOfIterations(); m_Iteration++ )
+    {
+    BeforeIteration();
+    // should we use smoothing filter? -- tested in the iteration on purpose, to be able to
+    // m_RelativeChangeCalculator the filter by looking at the iteration event
+    typename InternalImageType::Pointer newEstimate = NewEstimate();
+    if( m_SmoothingFilter.IsNotNull() && m_Iteration % m_SmoothingPeriod == 0 )
+      {
+      m_SmoothingFilter->SetInput( newEstimate );
+      newEstimate = m_SmoothingFilter->GetOutput();
+      }
+    newEstimate->Update();
+    newEstimate->DisconnectPipeline();
+    
+    // do we have to stop the iterations based on the relative m_RelativeChangeCalculator?
+    m_RelativeChangeCalculator->SetNewImage( newEstimate );
+    m_RelativeChangeCalculator->Compute();
+    // std::cout << m_RelativeChangeCalculator->GetOutput() << std::endl;
+    m_RelativeChange = m_RelativeChangeCalculator->GetOutput();
+    if( m_RelativeChangeThreshold > 0 && m_RelativeChange < m_RelativeChangeThreshold )
+      {
+      break;
+      }
+    else
+      {
+      // ok, lets go for another round
+      SetEstimate( newEstimate );
+      AfterIteration();
+      this->UpdateProgress( m_Iteration/(float)this->GetNumberOfIterations() );
+      this->InvokeEvent( IterationEvent() );
+      }
+    }
+  // to keep the actual number of iteration in m_Iteration
+  m_Iteration--;
+  // nothing more to do - just make sure that the data will be released
+  m_Estimate->SetReleaseDataFlag( true );
+}
+
+template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>
+void
+IterativeDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>
+::End()
+{
+  this->Superclass::End( m_Estimate, 0 );
+  this->UpdateProgress( 1.0 );
+  // destroy now useless objects
+  m_RelativeChangeCalculator = NULL;
+  m_Estimate = NULL;
 }
 
 template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>

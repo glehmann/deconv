@@ -17,7 +17,7 @@
 #ifndef __itkTikhonovMillerRichardsonLucyDeconvolutionImageFilter_h
 #define __itkTikhonovMillerRichardsonLucyDeconvolutionImageFilter_h
 
-#include "itkIterativeDeconvolutionImageFilter.h"
+#include "itkRichardsonLucyDeconvolutionImageFilter.h"
 #include "itkConceptChecking.h"
 
 namespace itk {
@@ -60,13 +60,13 @@ public:
  */
 template<class TInputImage, class TPointSpreadFunction=TInputImage, class TOutputImage=TInputImage, class TInternalPrecision=float>
 class ITK_EXPORT TikhonovMillerRichardsonLucyDeconvolutionImageFilter : 
-    public IterativeDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision> 
+    public RichardsonLucyDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision> 
 {
 public:
   /** Standard class typedefs. */
   typedef TikhonovMillerRichardsonLucyDeconvolutionImageFilter Self;
 
-  typedef IterativeDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>  Superclass;
+  typedef RichardsonLucyDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>  Superclass;
 
   typedef SmartPointer<Self>        Pointer;
   typedef SmartPointer<const Self>  ConstPointer;
@@ -112,7 +112,7 @@ public:
   itkNewMacro(Self);  
 
   /** Runtime information support. */
-  itkTypeMacro(TikhonovMillerRichardsonLucyDeconvolutionImageFilter, IterativeDeconvolutionImageFilter);
+  itkTypeMacro(TikhonovMillerRichardsonLucyDeconvolutionImageFilter, RichardsonLucyDeconvolutionImageFilter);
 
   itkGetConstMacro(Lambda, InternalPrecisionType);
   itkSetMacro(Lambda, InternalPrecisionType);
@@ -131,11 +131,13 @@ protected:
   TikhonovMillerRichardsonLucyDeconvolutionImageFilter();
   ~TikhonovMillerRichardsonLucyDeconvolutionImageFilter() {};
 
-  /** Single-threaded version of GenerateData.  This filter delegates
-   * to other filters. */
-  void GenerateData();
+  virtual void Init();
+  virtual void SetEstimate( InternalImageType * estimate );
+  virtual void End();
 
   void PrintSelf(std::ostream& os, Indent indent) const;
+
+  typename InternalFilterType::Pointer m_Laplacian;
 
 private:
   TikhonovMillerRichardsonLucyDeconvolutionImageFilter(const Self&); //purposely not implemented
