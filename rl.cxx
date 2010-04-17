@@ -13,7 +13,7 @@ int main(int argc, char * argv[])
 
   if( argc < 4 )
     {
-    std::cerr << "usage: " << argv[0] << " intput kernel output [nbIt [th [method [gpf]]]]" << std::endl;
+    std::cerr << "usage: " << argv[0] << " intput kernel output [nbIt [th [firstEstimate [method [gpf]]]]]" << std::endl;
     std::cerr << " input: the input image" << std::endl;
     std::cerr << " output: the output image" << std::endl;
     std::cerr << " method: padding method - 1: zero flux, 2: zero, 3: mirror, 4: wrap" << std::endl;
@@ -58,16 +58,24 @@ int main(int argc, char * argv[])
     TEST_SET_GET_VALUE( atof(argv[5]), conv->GetRelativeChangeThreshold() );
     }
 
+
+  ReaderType::Pointer reader3 = ReaderType::New();
   if( argc >= 7 )
     {
-    conv->SetPadMethod( atoi(argv[6]) );
-    TEST_SET_GET_VALUE( atoi(argv[6]), conv->GetPadMethod() );
+    reader3->SetFileName( argv[6] );
+    conv->SetFirstEstimate( reader3->GetOutput() );
     }
 
   if( argc >= 8 )
     {
-    conv->SetGreatestPrimeFactor( atoi(argv[7]) );
-    TEST_SET_GET_VALUE( atoi(argv[7]), conv->GetGreatestPrimeFactor() );
+    conv->SetPadMethod( atoi(argv[7]) );
+    TEST_SET_GET_VALUE( atoi(argv[7]), conv->GetPadMethod() );
+    }
+
+  if( argc >= 9 )
+    {
+    conv->SetGreatestPrimeFactor( atoi(argv[8]) );
+    TEST_SET_GET_VALUE( atoi(argv[8]), conv->GetGreatestPrimeFactor() );
     }
   itk::SimpleFilterWatcher watcher_norm(conv, "conv");
 
