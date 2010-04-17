@@ -37,7 +37,7 @@ MaximumAPosterioriLeastSquaresDeconvolutionImageFilter<TInputImage, TPointSpread
   ComplexImagePointerType input;
   ComplexImagePointerType psf;
   
-  this->Init( input, psf, 0.4f );
+  this->PrepareInputs( input, psf, 0.4f );
   
   typedef itk::BinaryFunctorWithIndexImageFilter< ComplexImageType,
                                     ComplexImageType,
@@ -55,7 +55,7 @@ MaximumAPosterioriLeastSquaresDeconvolutionImageFilter<TInputImage, TPointSpread
   mult->SetInPlace( true );
   this->RegisterInternalFilter( mult, 0.1f );
   
-  this->End( mult->GetOutput(), 0.3f );
+  this->ProduceOutput( mult->GetOutput(), 0.3f );
 }
 
 template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>

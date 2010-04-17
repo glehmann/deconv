@@ -55,7 +55,7 @@ TikhonovMillerDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutpu
   ComplexImagePointerType psf;
   ComplexImagePointerType reg;
   
-  this->Init( input, psf, 0.4f );
+  this->PrepareInputs( input, psf, 0.4f );
   this->PrepareImage( reg, this->InternalInput( 2 ), true, false, 0.2f );
   if( reg.IsNull() )
     {
@@ -79,7 +79,7 @@ TikhonovMillerDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutpu
   mult->SetInPlace( true );
   this->RegisterInternalFilter( mult, 0.1f );
   
-  this->End( mult->GetOutput(), 0.3f );
+  this->ProduceOutput( mult->GetOutput(), 0.3f );
 }
 
 template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>

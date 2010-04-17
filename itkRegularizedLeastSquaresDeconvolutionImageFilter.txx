@@ -37,7 +37,7 @@ RegularizedLeastSquaresDeconvolutionImageFilter<TInputImage, TPointSpreadFunctio
   ComplexImagePointerType input;
   ComplexImagePointerType psf;
   
-  this->Init( input, psf, 0.6f );
+  this->PrepareInputs( input, psf, 0.6f );
   
   typedef itk::BinaryFunctorImageFilter< ComplexImageType,
                                     ComplexImageType,
@@ -53,7 +53,7 @@ RegularizedLeastSquaresDeconvolutionImageFilter<TInputImage, TPointSpreadFunctio
   mult->SetInPlace( true );
   this->RegisterInternalFilter( mult, 0.1f );
   
-  this->End( mult->GetOutput(), 0.3f );
+  this->ProduceOutput( mult->GetOutput(), 0.3f );
 }
 
 template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>

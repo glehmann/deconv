@@ -42,9 +42,10 @@ VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputIma
   Superclass::Init();
 
   InternalImagePointerType input;
+  InternalImagePointerType firstEstimate;
   ComplexImagePointerType psf;
   
-  this->Superclass::Superclass::Init( input, psf, 0 );
+  this->PrepareInputs( input, firstEstimate, psf );
 
   // first convolve the input image by the psf
   typedef itk::FFTConvolveByOpticalTransferFunctionImageFilter< InternalPrecisionType, ImageDimension > ConvolutionType;
@@ -83,7 +84,7 @@ VanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputIma
   add->SetInPlace( true );
   m_Add = add;
   
-  SetEstimate( input );
+  SetEstimate( firstEstimate );
 
 }
 

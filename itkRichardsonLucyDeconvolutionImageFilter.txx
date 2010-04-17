@@ -32,9 +32,10 @@ RichardsonLucyDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutpu
   Superclass::Init();
 
   InternalImagePointerType input;
+  InternalImagePointerType firstEstimate;
   ComplexImagePointerType psf;
   
-  this->Superclass::Superclass::Init( input, psf, 0 );
+  this->PrepareInputs( input, firstEstimate, psf );
 
   // first convolve the input image by the psf
   typedef itk::FFTConvolveByOpticalTransferFunctionImageFilter< InternalPrecisionType, ImageDimension > ConvolutionType;
@@ -77,7 +78,7 @@ RichardsonLucyDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutpu
   mult->SetInPlace( true );
   m_Multiplication = mult;  
   
-  SetEstimate( input );
+  SetEstimate( firstEstimate );
 }
 
 template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>

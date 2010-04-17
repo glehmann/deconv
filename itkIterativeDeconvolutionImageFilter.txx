@@ -38,6 +38,22 @@ IterativeDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImag
 template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>
 void
 IterativeDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>
+::GenerateInputRequestedRegion()
+{
+  // call the superclass' implementation of this method
+  Superclass::GenerateInputRequestedRegion();
+  
+  BaseImageType * input = dynamic_cast<BaseImageType *>(this->ProcessObject::GetInput(2));
+  if ( !input )
+    { 
+    return;
+    }
+  input->SetRequestedRegion( input->GetLargestPossibleRegion() );
+}
+
+template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>
+void
+IterativeDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>
 ::GenerateData()
 {
   Init();
@@ -101,11 +117,30 @@ void
 IterativeDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>
 ::End()
 {
-  this->Superclass::End( m_Estimate, 0 );
+  this->ProduceOutput( m_Estimate, 0 );
   this->UpdateProgress( 1.0 );
   // destroy now useless objects
   m_RelativeChangeCalculator = NULL;
   m_Estimate = NULL;
+}
+
+template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>
+void
+IterativeDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>
+::PrepareInputs( InternalImagePointerType & paddedInput, InternalImagePointerType & paddedFirstEstimate,
+                 ComplexImagePointerType & paddedKernel )
+{
+  this->Superclass::PrepareInputs( paddedInput, paddedKernel, 0 );
+  
+  // now try to get a first estimate
+  InternalImageConstPointerType firstEstimate = this->InternalInput( 2 );
+  if( firstEstimate.IsNull() )
+    {
+    // no usable first estimate provided by the user - simply use the input image
+    paddedFirstEstimate = paddedInput;
+    return;
+    }
+  this->PrepareImage( paddedFirstEstimate, firstEstimate, false, false );
 }
 
 template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>

@@ -67,6 +67,10 @@ public:
   typedef typename ComplexImageType::PixelType     ComplexType;
 
   typedef typename Superclass::InternalImageType                                   InternalImageType;
+  typedef typename Superclass::InternalImagePointerType                            InternalImagePointerType;
+  typedef typename Superclass::InternalImageConstPointerType                       InternalImageConstPointerType;
+  typedef typename Superclass::BaseImageType                                       BaseImageType;
+  
   typedef typename itk::ImageToImageFilter< InternalImageType, InternalImageType > InternalFilterType;
   typedef RelativeChangeCalculator< InternalImageType >                            ChangeType;
 
@@ -136,8 +140,9 @@ protected:
   ~IterativeDeconvolutionImageFilter() {};
 
   void PrintSelf(std::ostream& os, Indent indent) const;
-  
+  void GenerateInputRequestedRegion();  
   virtual void GenerateData();
+  
   virtual void Iterate();
   
   virtual void Init();
@@ -153,6 +158,9 @@ protected:
     }
   virtual void AfterIteration() {};
   virtual void End();
+
+  void PrepareInputs( InternalImagePointerType & paddedInput, InternalImagePointerType & firstEstimate,
+                      ComplexImagePointerType & paddedKernel );
 
 private:
   IterativeDeconvolutionImageFilter(const Self&); //purposely not implemented
