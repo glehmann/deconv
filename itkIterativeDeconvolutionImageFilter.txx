@@ -140,7 +140,7 @@ IterativeDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImag
     paddedFirstEstimate = paddedInput;
     return;
     }
-  this->PrepareImage( paddedFirstEstimate, firstEstimate, false, false );
+  this->PrepareImage( paddedFirstEstimate, firstEstimate, false, false, 0 );
 }
 
 template<class TInputImage, class TPointSpreadFunction, class TOutputImage, class TInternalPrecision>
