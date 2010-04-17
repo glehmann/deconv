@@ -34,32 +34,22 @@ void
 MaximumAPosterioriLeastSquaresDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>
 ::GenerateData()
 {
-  // we need to get the padded image size for that algorithm, but that size may be altered by
-  // FFTW, so we get the non FFT input and do the FFT here by hand.
-  InternalImagePointerType input;
-  // ComplexImagePointerType input;
+  ComplexImagePointerType input;
   ComplexImagePointerType psf;
   
   this->Init( input, psf, 0.4f );
   
-  typename FFTFilterType::Pointer fft = FFTFilterType::New();
-  fft->SetInput( input );
-  fft->SetNumberOfThreads( this->GetNumberOfThreads() );
-  fft->SetReleaseDataFlag( true );
-  this->RegisterInternalFilter( fft, 0.2f );
-
   typedef itk::BinaryFunctorWithIndexImageFilter< ComplexImageType,
                                     ComplexImageType,
                                     ComplexImageType,
                 typename Functor::MaximumAPosterioriLeastSquaresDeconvolution< RegionType, ComplexType > >
                   MultType;
   typename MultType::Pointer mult = MultType::New();
-  // mult->SetInput( 0, input );
-  mult->SetInput( 0, fft->GetOutput() );
+  mult->SetInput( 0, input );
   mult->SetInput( 1, psf );
   mult->GetFunctor().m_Alpha = m_Alpha;
   // std::cout << input->GetLargestPossibleRegion() << std::endl;
-  mult->GetFunctor().m_Region = input->GetLargestPossibleRegion();
+  mult->GetFunctor().m_Region = this->GetPaddedRegion();
   mult->SetNumberOfThreads( this->GetNumberOfThreads() );
   mult->SetReleaseDataFlag( true );
   mult->SetInPlace( true );
