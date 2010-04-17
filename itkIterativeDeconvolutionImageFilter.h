@@ -125,6 +125,27 @@ public:
   itkGetConstMacro(RelativeChange, double);
   itkGetConstObjectMacro(Estimate, InternalImageType);
 
+  /** Set the first estimate image */
+  void SetFirstEstimate(const BaseImageType *input)
+    {
+    // Process object is not const-correct so the const casting is required.
+    this->ProcessObject::SetNthInput( 2, const_cast<BaseImageType *>(input) );
+    }
+
+  /** Get the first estimate image */
+  const BaseImageType * GetFirstEstimate() const
+    {
+    return static_cast<BaseImageType*>(
+      const_cast<DataObject *>(this->ProcessObject::GetInput(2)));
+    }
+
+  /** Set the first estimate image */
+  void SetInput2(const BaseImageType *input)
+    {
+    this->SetFirstEstimate( input );
+    }
+
+
 #ifdef ITK_USE_CONCEPT_CHECKING
   /** Begin concept checking */
   itkConceptMacro(InputHasPixelTraitsCheck,
