@@ -66,6 +66,7 @@ void
 IterativeDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImage, TInternalPrecision>
 ::Init()
 {
+  m_StopIteration = false;
   m_RelativeChangeCalculator = ChangeType::New();
 }
 
@@ -93,7 +94,8 @@ IterativeDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImag
     m_RelativeChangeCalculator->Compute();
     // std::cout << m_RelativeChangeCalculator->GetOutput() << std::endl;
     m_RelativeChange = m_RelativeChangeCalculator->GetOutput();
-    if( m_RelativeChangeThreshold > 0 && m_RelativeChange < m_RelativeChangeThreshold )
+    if( ( m_RelativeChangeThreshold > 0 && m_RelativeChange < m_RelativeChangeThreshold )
+        || m_StopIteration )
       {
       break;
       }
@@ -150,6 +152,7 @@ IterativeDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOutputImag
 {
   Superclass::PrintSelf(os, indent);
 
+  os << indent << "StopIteration: "  << m_StopIteration << std::endl;
   os << indent << "Iteration: "  << m_Iteration << std::endl;
   os << indent << "NumberOfIterations: "  << m_NumberOfIterations << std::endl;
   os << indent << "RelativeChange: "  << m_RelativeChange << std::endl;

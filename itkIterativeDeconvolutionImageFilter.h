@@ -145,6 +145,15 @@ public:
     this->SetFirstEstimate( input );
     }
 
+  /** Set the first estimate image */
+  void SetStopIteration(bool v)
+    {
+    // don't call modified so it can be called during the update
+    // without triggering a new update
+    m_StopIteration = v;
+    }
+  itkGetConstMacro(StopIteration, bool);
+
 
 #ifdef ITK_USE_CONCEPT_CHECKING
   /** Begin concept checking */
@@ -196,6 +205,7 @@ private:
   // internal only members
   typename ChangeType::Pointer               m_RelativeChangeCalculator;
   typename InternalImageType::Pointer        m_Estimate;
+  bool                                       m_StopIteration;
 
 }; // end of class
 
