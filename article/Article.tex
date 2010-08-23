@@ -106,19 +106,19 @@ The image formation can be modelised as follow:
 
 \begin{eqnarray}
 \label{eq:imageFormation}
-I = N_P( I_0 \otimes P ) + N_G
+I = N_P( O \otimes P ) + N_G
 \end{eqnarray}
 
-where $I$ is the observed image, $I_0$ is the unknown real image, $P$ is the point spread function, $\otimes$ is the convolution process,
+where $I$ is the observed image, $O$ is the unknown original image, $P$ is the point spread function, $\otimes$ is the convolution process,
 $N_G$ is an additive gaussian noise and $N_P$ is a poisson noise. $N_G$ and $N_P$ can be more or less important, and may be negleted
 depending of the cases.
 
 Several approaches have been considered over the time to solve that difficult problem, leading to two groups of algorithms:
 
 \begin{itemize}
- \item direct algorithms: the computation is made in a fixed number of passes. They are generally very fast and very useful in previsualization.
+ \item linear algorithms: the computation is made in a fixed number of passes. They are generally very fast and very useful in previsualization.
  \item iterative algorithms: the computation of the unblurred image is refined iteration after iteration. While generally slower
-(and even a lot slower) than the direct algorithms, they also generally produce more accurate results, by allowing the integration
+(and even a lot slower) than the linear algorithms, they also generally produce more accurate results, by allowing the integration
 of constraints during the computation, like the non negativity of the light intensity.
 \end{itemize}
 
@@ -129,7 +129,7 @@ none of those methods are provided here, and may be developped in another contri
 
 \section{Infrastructure}
 
-There are several common steps in the deconvolution algorithms, being direct or iterative. The most obvious is the transform
+There are several common steps in the deconvolution algorithms, being linear or iterative. The most obvious is the transform
 to the frequency domain to make the computations. This code is already available in another contribution by the same author ***ref***.
 Some others, mostly related to the iterative deconvolution, are also usable outside of the context of the deconvolution -- they
 have been grouped here in generic classes and calculators.
@@ -207,20 +207,20 @@ This parameter is widely used in case of poisson noise.
 Computes the ratio of the total intensity of two images. This calculator allows to verify a desirable feature of some deconvolution
 algorithms: the non modification of the global intensity in the image.
 
-\section{Direct deconvolution}
+\section{Linear deconvolution}
 
-Direct deconvolution algorithms are made in a non-iterative way, making them usually faster than the iterative deconvolution algorithms.
+Linear deconvolution algorithms are made in a non-iterative way, making them usually faster than the iterative deconvolution algorithms.
 They are often implemented with FFT based convolution, and thus as a subclass of \verb$itk::FFTConvolutionImageFilterBase$. They don't
 have any specific needs which are not covered by this base class, and thus no special base class has been develop for this group
 of filters.
 
 \section{Iterative deconvolution}
 
-Iterative deconvolution algorithms exhibits some less usual construction than the direct ones. A base class, \verb$itk::IterativeDeconvolutionImageFilter$
+Iterative deconvolution algorithms exhibits some less usual construction than the linear ones. A base class, \verb$itk::IterativeDeconvolutionImageFilter$
 has been developped to share some code bitween the different algorithm implementation and make them easier to code.
 
 An iterative algorithm is usually quite long to run, so we want a little more observability and possibilities of interaction during the update
-process than with a direct algorithm. 
+process than with a linear algorithm. 
 
 The filter should:
 \begin{itemize}
@@ -233,36 +233,87 @@ The filter should:
  \item be able to run for a given number of iterations
  \item be able to stop if the process has reach a stable state
  \item provide the basic infrasctructure for the iteration to make the filters easier to implement
- \itme allow the user to modify the image at each iteration to add a smoothing step for example
+ \item allow the user to modify the image at each iteration to add a smoothing step for example
 \end{itemize}
-
-
-
-\subsubsection{itk::IterativeDeconvolutionImageFilter}
+Those features have been implemented in \verb$itk::IterativeDeconvolutionImageFilter$.
 
 This is the base class for any iterative deconvolution algorithm. It is a subclass of \verb$itk::FFTConvolutionImageFilterBase$ and add some methods
 to implement the iterative process, and some useful features.
 
-
--- TODO: observability
--- TODO: stopping at a given point
--- TODO: restarting at a given point
-
-
-
 \section{Reference algoritms}
 
-\subsection{Direct algorithms}
+\subsection{Linear algorithms}
 \subsubsection{itk::WienerDeconvolutionImageFilter}
+
+An additive gaussian noise is assumed with the Wiener deconvolution. 
+
+\begin{eqnarray}
+\label{eq:imageFormation}
+\hat{I_{\omega}} = \frac{I_{\omega} P_{\omega}^*}{\lvert P_{\omega}\rvert^2 + \gamma}
+\end{eqnarray}
+
+where $\gamma$ is a user defined parameter. $\gamma$ depends on the amount of noise in the image and is
+usually in the range $0.001$ to $0.1$.
+
 \subsubsection{itk::TikhonovMillerDeconvolutionImageFilter}
+
+An additive gaussian noise is assumed with the linear Tikhonov-Miller deconvolution. 
+
+\begin{eqnarray}
+\label{eq:imageFormation}
+\hat{I_{\omega}} = \frac{I_{\omega} P_{\omega}^*}{\lvert P_{\omega}\rvert^2 + \gamma\lvert R_{\omega}\rvert^2}
+\end{eqnarray}
+
+where $R$ is a regularization operator -- usually a laplacian -- and $\gamma$ is a user defined parameter.
+$\gamma$ depends on the amount of noise in the image and is usually in the range $0.001$ to $0.1$.
+
 \subsubsection{itk::RegularizedLeastSquaresDeconvolutionImageFilter}
-\subsubsection{itk::MaximumAPosterioriLeastSquaresDeconvolutionImageFilter}
+
+\begin{eqnarray}
+\label{eq:imageFormation}
+\hat{I_{\omega}} =
+\begin{cases} 
+  \frac{I_{\omega} P_{\omega}^*}{\lvert P_{\omega}\rvert^2},  & \text{if}~ \lvert P_{\omega}\rvert^2 > \alpha \\
+  0,  & \text{otherwise} \\
+\end{cases}
+\end{eqnarray}
+
+% \subsubsection{itk::MaximumAPosterioriLeastSquaresDeconvolutionImageFilter}
 
 \subsection{Iterative algorithms}
 % \subsubsection{itk::AdaptivelyAcceleratedRichardsonLucyDeconvolutionImageFilter}
 \subsubsection{itk::VanCittertDeconvolutionImageFilter}
+
+\begin{eqnarray}
+\label{eq:imageFormation}
+\hat{I_n} = \hat{I}_{n-1} + \alpha \left( I -P \otimes \hat{I}_{n-1}  \right)
+\end{eqnarray}
+
+An optional non negativity constraint can be applied at each iteration.
+
 \subsubsection{itk::JanssonVanCittertDeconvolutionImageFilter}
+
+\begin{eqnarray}
+\label{eq:imageFormation}
+\hat{I_n} = \hat{I}_{n-1} + \alpha\left(1-\frac{2}{B-A}\lvert \hat{I}_{n-1}-\frac{A+B}{2}\rvert\right) \left( I - P \otimes \hat{I}_{n-1}  \right)
+\end{eqnarray}
+where $A$ is the minimum value in the image an $B$ the greatest value in the image.
+In our implementation, it is restricted to $A=0$, which leads to
+\begin{eqnarray}
+\label{eq:imageFormation}
+\hat{I_n} = \hat{I}_{n-1} + \alpha\left(1-\frac{2\lvert \hat{I}_{n-1}-B/2\rvert}{B}\right) \left( I - P \otimes \hat{I}_{n-1}  \right)
+\end{eqnarray}
+
+An optional non negativity constraint can be applied at each iteration.
+
 \subsubsection{itk::LandweberDeconvolutionImageFilter}
+
+\begin{eqnarray}
+\label{eq:imageFormation}
+\hat{I_n} = \hat{I}_{n-1} + \alpha P^T \otimes \left( I - P \otimes \hat{I}_{n-1}  \right)
+\end{eqnarray}
+
+An optional non negativity constraint can be applied at each iteration.
 \subsubsection{itk::RichardsonLucyDeconvolutionImageFilter}
 \subsubsection{itk::MaximumEntropyRichardsonLucyDeconvolutionImageFilter}
 \subsubsection{itk::PoissonMaximumAPosterioriDeconvolutionImageFilter}
