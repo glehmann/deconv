@@ -44,8 +44,8 @@ JanssonVanCittertDeconvolutionImageFilter<TInputImage, TPointSpreadFunction, TOu
   add->SetInput( 0, this->m_Add->GetInput( 0 ) );
   add->GetFunctor().m_Alpha = this->GetAlpha();
   add->GetFunctor().m_NonNegativity = this->GetNonNegativity();
-  add->GetFunctor().m_A = (TInternalPrecision) calc->GetMaximum() / 2.0;
-  // std::cout << "functor.m_A: " << functor.m_A << std::endl;
+  add->GetFunctor().m_B2 = (TInternalPrecision) calc->GetMaximum() / 2.0;
+  // std::cout << "functor.m_B2: " << functor.m_B2 << std::endl;
   add->SetNumberOfThreads( this->GetNumberOfThreads() );
   add->SetReleaseDataFlag( true );
   add->SetInPlace( true );

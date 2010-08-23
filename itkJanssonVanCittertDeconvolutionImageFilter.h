@@ -40,15 +40,15 @@ public:
     }
   inline TReal operator()( const TReal & residual, const TReal & img )
     {
-    TReal gamma = ( img - m_A ) / m_A;
-    TReal result = residual * ( 1 - gamma*gamma ) * m_Alpha + img;
+    TReal gamma = m_Alpha * ( 1 - std::abs( img - m_B2 ) / m_B2 );
+    TReal result = img + gamma * residual;
     if( m_NonNegativity && result < 0 )
       {
       result = 0;
       }
     return result;
     }
-  TReal m_A;
+  TReal m_B2;
   TReal m_Alpha;
   bool  m_NonNegativity;
 };
