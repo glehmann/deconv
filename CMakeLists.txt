@@ -1,6 +1,6 @@
 #Change PROJECT_NAME to the name of your project
 PROJECT(deconv)
-INCLUDE_DIRECTORIES("${CMAKE_CURRENT_SOURCE_DIR}/../fftconv")
+INCLUDE_DIRECTORIES("${CMAKE_CURRENT_SOURCE_DIR}/fftconv")
 
 # required to avoid warnings while running cmake
 CMAKE_MINIMUM_REQUIRED(VERSION 2.4.2)
@@ -37,6 +37,7 @@ ENDFOREACH(Package)
 #Set any libraries that your project depends on.
 #examples: ITKCommon, VTKRendering, etc
 SET(Libraries
+  ITKAlgorithms
   ITKCommon
   ITKBasicFilters
   ITKIO
@@ -70,89 +71,10 @@ ENDIF(BUILD_WRAPPERS)
 
 IF(BUILD_TESTING)
 
-SET(CurrentExe "wiener")
-ADD_EXECUTABLE(${CurrentExe} ${CurrentExe}.cxx)
-TARGET_LINK_LIBRARIES(${CurrentExe} ${Libraries})
-
-SET(CurrentExe "conj")
-ADD_EXECUTABLE(${CurrentExe} ${CurrentExe}.cxx)
-TARGET_LINK_LIBRARIES(${CurrentExe} ${Libraries})
-
-SET(CurrentExe "rl")
-ADD_EXECUTABLE(${CurrentExe} ${CurrentExe}.cxx)
-TARGET_LINK_LIBRARIES(${CurrentExe} ${Libraries})
-
-SET(CurrentExe "change")
-ADD_EXECUTABLE(${CurrentExe} ${CurrentExe}.cxx)
-TARGET_LINK_LIBRARIES(${CurrentExe} ${Libraries})
-
-SET(CurrentExe "mrl")
-ADD_EXECUTABLE(${CurrentExe} ${CurrentExe}.cxx)
-TARGET_LINK_LIBRARIES(${CurrentExe} ${Libraries})
-
-SET(CurrentExe "vc")
-ADD_EXECUTABLE(${CurrentExe} ${CurrentExe}.cxx)
-TARGET_LINK_LIBRARIES(${CurrentExe} ${Libraries})
-
-SET(CurrentExe "jvc")
-ADD_EXECUTABLE(${CurrentExe} ${CurrentExe}.cxx)
-TARGET_LINK_LIBRARIES(${CurrentExe} ${Libraries})
-
-SET(CurrentExe "l")
-ADD_EXECUTABLE(${CurrentExe} ${CurrentExe}.cxx)
-TARGET_LINK_LIBRARIES(${CurrentExe} ${Libraries})
-
-SET(CurrentExe "gauss")
-ADD_EXECUTABLE(${CurrentExe} ${CurrentExe}.cxx)
-TARGET_LINK_LIBRARIES(${CurrentExe} ${Libraries})
-
-SET(CurrentExe "rlls")
-ADD_EXECUTABLE(${CurrentExe} ${CurrentExe}.cxx)
-TARGET_LINK_LIBRARIES(${CurrentExe} ${Libraries})
-
-SET(CurrentExe "maplls")
-ADD_EXECUTABLE(${CurrentExe} ${CurrentExe}.cxx)
-TARGET_LINK_LIBRARIES(${CurrentExe} ${Libraries})
-
-SET(CurrentExe "merl")
-ADD_EXECUTABLE(${CurrentExe} ${CurrentExe}.cxx)
-TARGET_LINK_LIBRARIES(${CurrentExe} ${Libraries})
-
-SET(CurrentExe "tmrl")
-ADD_EXECUTABLE(${CurrentExe} ${CurrentExe}.cxx)
-TARGET_LINK_LIBRARIES(${CurrentExe} ${Libraries})
-
-SET(CurrentExe "idiv")
-ADD_EXECUTABLE(${CurrentExe} ${CurrentExe}.cxx)
-TARGET_LINK_LIBRARIES(${CurrentExe} ${Libraries})
-
-SET(CurrentExe "cprl")
-ADD_EXECUTABLE(${CurrentExe} ${CurrentExe}.cxx)
-TARGET_LINK_LIBRARIES(${CurrentExe} ${Libraries})
-
-SET(CurrentExe "isnr")
-ADD_EXECUTABLE(${CurrentExe} ${CurrentExe}.cxx)
-TARGET_LINK_LIBRARIES(${CurrentExe} ${Libraries})
-
-SET(CurrentExe "tir")
-ADD_EXECUTABLE(${CurrentExe} ${CurrentExe}.cxx)
-TARGET_LINK_LIBRARIES(${CurrentExe} ${Libraries})
-
-SET(CurrentExe "map")
-ADD_EXECUTABLE(${CurrentExe} ${CurrentExe}.cxx)
-TARGET_LINK_LIBRARIES(${CurrentExe} ${Libraries})
-
-SET(CurrentExe "drl")
-ADD_EXECUTABLE(${CurrentExe} ${CurrentExe}.cxx)
-TARGET_LINK_LIBRARIES(${CurrentExe} ${Libraries})
-
-SET(CurrentExe "aarl")
-ADD_EXECUTABLE(${CurrentExe} ${CurrentExe}.cxx)
-TARGET_LINK_LIBRARIES(${CurrentExe} ${Libraries})
-
-SET(CurrentExe "tm")
-ADD_EXECUTABLE(${CurrentExe} ${CurrentExe}.cxx)
-TARGET_LINK_LIBRARIES(${CurrentExe} ${Libraries})
+FOREACH(CurrentExe "wiener" "conj" "rl" "change" "mrl" "vc" "jvc" "l" "gauss" "rlls" "maplls" "merl" "tmrl" "idiv" "cprl" "isnr" "tir" "map" "drl" "aarl" "tm")
+  ADD_EXECUTABLE(${CurrentExe} ${CurrentExe}.cxx ${CMAKE_CURRENT_SOURCE_DIR}/fftconv/itkFFTWLock.cxx)
+  TARGET_LINK_LIBRARIES(${CurrentExe} ${Libraries})
+ENDFOREACH(CurrentExe)
 
 ENDIF(BUILD_TESTING)
 
