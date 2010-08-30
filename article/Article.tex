@@ -118,7 +118,7 @@ Several approaches have been considered over the time to solve that difficult pr
 \begin{itemize}
  \item linear algorithms: the computation is made in a fixed number of passes. They are generally very fast and very useful in previsualization.
  \item iterative algorithms: the computation of the unblurred image is refined iteration after iteration. While generally slower
-(and even a lot slower) than the linear algorithms, they also generally produce more accurate results, by allowing the integration
+ than the linear algorithms, they also generally produce more accurate results, by allowing the integration
 of constraints during the computation, like the non negativity of the light intensity.
 \end{itemize}
 
@@ -130,9 +130,9 @@ none of those methods are provided here, and may be developped in another contri
 \section{Infrastructure}
 
 There are several common steps in the deconvolution algorithms, being linear or iterative. The most obvious is the transform
-to the frequency domain to make the computations. This code is already available in another contribution by the same author ***ref***.
-Some others, mostly related to the iterative deconvolution, are also usable outside of the context of the deconvolution -- they
-have been grouped here in generic classes and calculators.
+to the frequency domain to make the computations. This code is already available in another contribution by the same author.
+Some others steps, mostly related to the iterative deconvolution, are also usable outside of the context of the deconvolution -- they
+have been grouped here in generic filters and calculators.
 
 \subsection{Generic classes}
 
@@ -141,24 +141,26 @@ This filter is very similar to \verb$itk::BinaryFunctorImageFilter$, but also is
 current index to the functor, allowing to apply a transform dependent on the position in the image.
 
 \subsubsection{itk::ComplexConjugateImageFilter}
-This filter simply compute the complex conjugate of an image pixel-wise.
+This filter simply compute the complex conjugate of a complex image pixel-wise.
 
 \subsubsection{itk::DivideOrZeroOutImageFilter}
-This filter divide an image by another, and replace any too small value by zero. It is very useful to prevent very large value
+This filter divides an image by another, and replaces any too small value (defined by the user) by zero. It is very useful to prevent very large value
 when the result is used as the denominator in a division.
 
 \subsubsection{itk::MultiplyByComplexConjugateImageFilter}
-This filter combines in a single step the complex conjugate transform and the multiplication to another complex number.
+This filter combines, in a single step, the complex conjugate transform and the multiplication by a complex number from another image.
+Its principal interest is to reduce the number of filters involved in a pipeline, but it may also provide some performance enhancements (not measured).
 
 \subsubsection{itk::LaplacianImageFilter}
 This filter has been modified so that the laplacian kernel can be normalized to one, in order to produced reproductible changes
-independently of the image spacing. It has also been enhance to run the expected number of threads.
+independently of the image spacing. It has also been enhanced to run the expected number of threads.
 
 \subsubsection{itk::FFTConvolveByOpticalTransferFunctionImageFilter}
 
 Performs the convolution of an image in the spatial domain by a kernel in the frequency domain. It is implemented with the very
-simple pipeline FFT-frequency domain multiplication-inverse FFT and is used in many iterative algorithm to reduce the code
+simple pipeline FFT-frequency domain multiplication-inverse FFT and is used in many iterative algorithms to reduce the code
 complexity.
+An option is available to compute the convolution by the conjugate of the kernel image.
 
 \section{Calculators}
 
@@ -168,16 +170,14 @@ multithreaded.
 
 \subsubsection{itk::ImprovementInSignalToNoiseRatioCalculator}
 
-Compute the signal to noise improvment based on three images: the unaltered image, the altered image and the restored image.
-This is useful to measure the efficiency of a restoration procedure.
+Compute the signal to noise improvement based on three images: the original image, the blurred image and the restored image.
+This is useful to measure the efficiency of a restoration procedure, but requires to have the original image, and so is
+restricted to a simulated blur.
 
 \begin{eqnarray}
 \label{eq:imageFormation}
 improvment = 10 \times log_{10}\left(\frac{\sum (I_{blurred} - I_{origin} )^2}{\sum (I_{restored} - I_{origin} )^2}\right)
 \end{eqnarray}
-it is used as a criteria to stop the iteration process in the iterative deconvolution.
-The formulae used is
-
 
 \subsubsection{itk::RelativeChangeCalculator}
 
@@ -200,7 +200,8 @@ idiv = \sum
   - ( I_n - I_{n+1} ),  & \text{otherwise} \\
 \end{cases}
 \end{eqnarray}
-This parameter is widely used in case of poisson noise.
+This parameter is widely used in case of poisson noise. Note that the 0 case is often not documented
+and as been chosen as it is in this definition by the author.
 
 \subsubsection{itk::TotalIntensityRatioCalculator}
 
@@ -210,14 +211,14 @@ algorithms: the non modification of the global intensity in the image.
 \section{Linear deconvolution}
 
 Linear deconvolution algorithms are made in a non-iterative way, making them usually faster than the iterative deconvolution algorithms.
-They are often implemented with FFT based convolution, and thus as a subclass of \verb$itk::FFTConvolutionImageFilterBase$. They don't
-have any specific needs which are not covered by this base class, and thus no special base class has been develop for this group
-of filters.
+They are mostly implemented with FFT based convolution, that's why all the implemation provided here are subclasses of
+\verb$itk::FFTConvolutionImageFilterBase$. They don't have any specific needs which are not covered by this base class,
+and thus no special base class has been develop for this group of filters.
 
 \section{Iterative deconvolution}
 
 Iterative deconvolution algorithms exhibits some less usual construction than the linear ones. A base class, \verb$itk::IterativeDeconvolutionImageFilter$
-has been developped to share some code bitween the different algorithm implementation and make them easier to code.
+has been developped to share some code bitween the different algorithm implementations and make them easier to code.
 
 An iterative algorithm is usually quite long to run, so we want a little more observability and possibilities of interaction during the update
 process than with a linear algorithm. 
@@ -225,27 +226,26 @@ process than with a linear algorithm.
 The filter should:
 \begin{itemize}
  \item be able to start with a different image than the input image. This should allow to restart a deconvolution where the process has stopped
-       and to use precondionned images to start the deconvolution with
- \item announce when an iteration is completed
- \item expose the current iteration number
- \item expose the result of the last iteration to let the user visually check the deconvolution result during the process
- \item be able to stop at any iteration is the user decide to do so
- \item be able to run for a given number of iterations
- \item be able to stop if the process has reach a stable state
- \item provide the basic infrasctructure for the iteration to make the filters easier to implement
- \item allow the user to modify the image at each iteration to add a smoothing step for example
+       and to use precondionned images to start the deconvolution with;
+ \item announce when an iteration is completed;
+ \item expose the current iteration number;
+ \item expose the result of the last iteration to let the user visually check the deconvolution result during the process;
+ \item be able to stop at any iteration if the user decide to do so;
+ \item be able to run for a given number of iterations;
+ \item be able to stop if the process has reach a stable state;
+ \item provide the basic infrasctructure for the iteration to make the filters easier to implement;
+ \item allow the user to modify the image at each iteration to add a smoothing step for example.
 \end{itemize}
-Those features have been implemented in \verb$itk::IterativeDeconvolutionImageFilter$.
-
-This is the base class for any iterative deconvolution algorithm. It is a subclass of \verb$itk::FFTConvolutionImageFilterBase$ and add some methods
-to implement the iterative process, and some useful features.
+Those features have been implemented in \verb$itk::IterativeDeconvolutionImageFilter$, as a subclass of \verb$itk::FFTConvolutionImageFilterBase$.
 
 \section{Reference algoritms}
+
+Some reference algorithms implementations are provided. In the next equations, $I_\omega$ is the image $I$ in the frequency domain.
 
 \subsection{Linear algorithms}
 \subsubsection{itk::WienerDeconvolutionImageFilter}
 
-An additive gaussian noise is assumed with the Wiener deconvolution. 
+An additive gaussian noise is assumed with the Wiener deconvolution.
 
 \begin{eqnarray}
 \label{eq:imageFormation}
@@ -266,6 +266,7 @@ An additive gaussian noise is assumed with the linear Tikhonov-Miller deconvolut
 
 where $R$ is a regularization operator -- usually a laplacian -- and $\gamma$ is a user defined parameter.
 $\gamma$ depends on the amount of noise in the image and is usually in the range $0.001$ to $0.1$.
+If $R$ is the identity transform, the direct Tikhonov-Miller deconvolution is equivalent as the Wiener deconvolution.
 
 \subsubsection{itk::RegularizedLeastSquaresDeconvolutionImageFilter}
 
@@ -306,6 +307,9 @@ In our implementation, it is restricted to $A=0$, which leads to
 
 An optional non negativity constraint can be applied at each iteration.
 
+This filter is implemented by subclassing \verb$itk::VanCittertDeconvolutionImageFilter$ and slightly
+modifying its internal pipeline.
+
 \subsubsection{itk::LandweberDeconvolutionImageFilter}
 
 \begin{eqnarray}
@@ -314,43 +318,102 @@ An optional non negativity constraint can be applied at each iteration.
 \end{eqnarray}
 
 An optional non negativity constraint can be applied at each iteration.
+
+This filter is implemented by subclassing \verb$itk::VanCittertDeconvolutionImageFilter$ and slightly
+modifying its internal pipeline.
+
 \subsubsection{itk::RichardsonLucyDeconvolutionImageFilter}
+
+\begin{eqnarray}
+\label{eq:imageFormation}
+\hat{I_n} = \hat{I}_{n-1} \left(  P^T \otimes \frac{I}{ P \otimes \hat{I}_{n-1}} \right)
+\end{eqnarray}
+
 \subsubsection{itk::MaximumEntropyRichardsonLucyDeconvolutionImageFilter}
-\subsubsection{itk::PoissonMaximumAPosterioriDeconvolutionImageFilter}
-\subsubsection{itk::TikhonovMillerRichardsonLucyDeconvolutionImageFilter}
-\subsubsection{itk::ConchelloIntensityPenalizationImageFilter}
+
+\begin{eqnarray}
+\label{eq:imageFormation}
+\hat{I_n} = \hat{I}_{n-1} \left(  P^T \otimes \frac{I}{ P \otimes \hat{I}_{n-1}} \right) - T I_{n-1} ln(I_{n-1})
+\end{eqnarray}
+
+This filter is implemented by subclassing \verb$itk::RichardsonLucyDeconvolutionImageFilter$ and slightly
+modifying its internal pipeline.
+
+This filter doesn't conserve the global intensity in the image.
+
 \subsubsection{itk::DampedRichardsonLucyDeconvolutionImageFilter}
 
-\section{Wrapping}
+\begin{eqnarray}
+\label{eq:imageFormation}
+U_{n-1}   & = & -\frac{2}{T^2}\left(I+ln(\frac{P \otimes \hat{I}_{n-1}}{I})-P \otimes \hat{I}_{n-1}+I\right) \\
+\hat{I_n} & = & \hat{I}_{n-1} \left(  P^T \otimes \left(1+ U_{n-1}^{N-1}(N-(N-1)U_{n-1})\frac{I - P \otimes \hat{I}_{n-1}}{ P \otimes \hat{I}_{n-1}} \right)\right)
+\end{eqnarray}
 
-All the new filters have been wrapped using WrapITK.
+This filter is implemented by subclassing \verb$itk::RichardsonLucyDeconvolutionImageFilter$ and slightly
+modifying its internal pipeline.
+
+\subsubsection{itk::ConchelloIntensityPenalizationImageFilter}
+
+The Conchello's intensity regularization is implemented as an external regularization filter to plug into the regular
+Richardson-Lucy filter.
+
+At each iteration, it adds the following computation to avoid over intensifying the bright pixels:
+
+\begin{eqnarray}
+\label{eq:imageFormation}
+\hat{I_n} = \frac{- 1.0 + \sqrt{ 1 + 2 \lambda \hat{I_n} } }{\lambda}
+\end{eqnarray}
+
+This filter doesn't conserve the global intensity in the image.
+
+\subsubsection{itk::TikhonovMillerRichardsonLucyDeconvolutionImageFilter}
+
+
+\begin{eqnarray}
+\label{eq:imageFormation}
+\hat{I_n} = \frac{\hat{I}_{n-1}}{1-2\lambda\Delta_{\hat{I}_{n-1}}} \left(  P^T \otimes \frac{I}{ P \otimes \hat{I}_{n-1}} \right)
+\end{eqnarray}
+
+This filter is implemented by subclassing \verb$itk::RichardsonLucyDeconvolutionImageFilter$ and slightly
+modifying its internal pipeline.
+
+\subsubsection{itk::PoissonMaximumAPosterioriDeconvolutionImageFilter}
+
+\begin{eqnarray}
+\label{eq:imageFormation}
+\hat{I_n} = \hat{I}_{n-1} e^{P^T \otimes \left(\frac{I}{ P \otimes \hat{I}_{n-1}}-1\right)}
+\end{eqnarray}
+
+% \section{Wrapping}
+% 
+% All the new filters have been wrapped using WrapITK.
 
 \section{Development version}
 
 A development version is available in a darcs repository at
 \url{http://mima2.jouy.inra.fr/darcs/contrib-itk/deconv/}.
 
-\section{Acknowledgments}
+% \section{Acknowledgments}
 
 
 \section{Conclusion}
 
 With this work, we are providing a well constructed infrasctructure which should highly simplify the implementation
-of deconvolution algorithms with ITK, and should helt to keep the API very similar in all the future deconvolution filters.
+of deconvolution algorithms with ITK, and should help to keep the API very similar in all the future deconvolution filters.
 
-We have also provided several reference algorithms implementation. While not as the state of the art, those algorithm are
+We have also provided several reference algorithms implementation. While not at the state of the art, those algorithms are
 considered as reference in the domain, and their simplicity was a great opportunity to ensure a high reusability of the
 infrastructure code.
 
-Several things are still to be developped to make ITK a real actor in the deconvolution fields:
+Several things are still to be developed to make ITK a real actor in the deconvolution fields:
 
 \begin{itemize}
- \item some state of the art algorithm implementations. Significant improvments has been made in the last decade
+ \item some state of the art algorithm implementations. Significant improvements has been made in the last decade
 in the deconvolution field, and the implemented algorithms, while useful as references, just can't compete with the
-more recent published algorithms.
- \item blind deconvolution
- \item theorical PSF generation
- \item real test cases
+more recent published algorithms;
+ \item blind deconvolution;
+ \item theorical PSF generation;
+ \item real test cases.
 \end{itemize}
 
 
